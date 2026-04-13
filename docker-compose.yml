@@ -5,6 +5,15 @@ services:
     ports:
       - "${REDIS_EXTERNAL_PORT:-6379}:6379"
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      # Redis에 "ping" 명령어를 실행해서 "PONG" 응답 오면 정상
+      interval: 10s
+      # 10초마다 한 번씩 체크
+      timeout: 5s
+      # 5초 안에 응답 없으면 실패로 간주
+      retries: 5
+      # 5번 연속 실패하면 컨테이너를 unhealthy 상태로 표시
 
   mysql:
     image: mysql:8.0
@@ -17,6 +26,11 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build:
@@ -35,8 +49,10 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
-      - mysql
-      - redis
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

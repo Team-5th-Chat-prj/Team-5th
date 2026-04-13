@@ -23,4 +23,6 @@ spring:
       port: ${REDIS_PORT}
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  access-expiration-time: 900000 # 15분 (ms)
+  # Refresh Token 미구현으로 인해 Access Token 만료시간을 24시간으로 설정
+  # 추후 Refresh Token 도입 시 15분(900000ms)으로 단축 예정
+  access-expiration-time: ${JWT_ACCESS_EXPIRATION_TIME:86400000}
