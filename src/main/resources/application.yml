@@ -23,4 +23,4 @@ spring:
       port: ${REDIS_PORT}
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  access-expiration-time: 900000 # 15분 (ms)
+  access-expiration-time: ${JWT_ACCESS_EXPIRATION_TIME:86400000}
