@@ -8,11 +8,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -165,7 +167,17 @@ public class JwtProvider {
         }
         return false;
     }
-
+    /**
+     * Authorization 헤더에서 Bearer 토큰 추출
+     * JwtAuthFilter, AuthController(로그아웃)에서 공통으로 사용
+     */
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
     /**
      * 토큰에서 클레임 추출
      * 만료된 토큰이라도 클레임 자체는 읽을 수 있어서 ExpiredJwtException 별도 처리

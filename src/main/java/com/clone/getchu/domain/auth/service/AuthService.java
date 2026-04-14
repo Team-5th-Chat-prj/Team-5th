@@ -13,7 +13,6 @@ import com.clone.getchu.global.exception.NotFoundException;
 import com.clone.getchu.global.exception.UnauthorizedException;
 import com.clone.getchu.global.security.JwtProvider;
 import com.clone.getchu.global.util.RedisKeyConstants;
-import com.clone.getchu.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -86,7 +85,7 @@ public class AuthService {
                 jwtProvider.getRefreshExpirationTime(),
                 TimeUnit.MILLISECONDS
         );
-
+        // @Value로 주입받던 방식 -> JwtProvider에서 가져오는 방식
         return LoginResponse.of(accessToken, refreshToken, jwtProvider.getAccessExpirationTime());
     }
 
@@ -142,21 +141,17 @@ public class AuthService {
      * [참고] AT 만료(15분) 후에는 블랙리스트 키가 자동 삭제되므로 Redis 공간 낭비 없음
      * [참고] DB 작업 없이 Redis만 사용하므로 @Transactional 미적용
      */
-    public void logout(String accessToken) {
-        // 1. AT 블랙리스트 등록
+    public void logout(Long memberId, String accessToken) {
         long remaining = jwtProvider.getRemainingExpiration(accessToken);
         if (remaining > 0) {
-            String blKey = RedisKeyConstants.blacklistKey(accessToken);
             stringRedisTemplate.opsForValue().set(
-                    blKey,
+                    RedisKeyConstants.blacklistKey(accessToken),
                     "logout",
                     remaining,
                     TimeUnit.MILLISECONDS
             );
         }
-
-        // 2. RT 삭제
-        Long memberId = SecurityUtil.getCurrentMemberId();
+        // SecurityUtil 대신 파라미터로 받은 memberId 사용
         stringRedisTemplate.delete(RedisKeyConstants.refreshTokenKey(memberId));
     }
 }

@@ -42,9 +42,6 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final JwtProvider jwtProvider;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
@@ -53,8 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String jwt = resolveToken(request);
-
+        String jwt = jwtProvider.resolveToken(request);
         // JWT가 없는 경우:
         // - 인증 정보가 없는 요청으로 처리
         // - SecurityContext를 설정하지 않고 다음 필터로 넘김
@@ -66,9 +62,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             // validateToken() 은 예외를 내부에서 swallow하므로 만료/무효 구분이 불가.
             // validateTokenOrThrow() 로 예외를 전파받아 정확한 에러코드를 반환한다.
-            jwtProvider.validateTokenOrThrow(jwt);
-
             // 로그아웃된 토큰(블랙리스트) 차단 — Redis에 "BL:{token}" 키 존재 여부 확인
+            jwtProvider.validateTokenOrThrow(jwt);
             if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RedisKeyConstants.blacklistKey(jwt)))) {
                 log.warn("블랙리스트 처리된 Access Token입니다. code={}, message={}",
                         ErrorCode.LOGGED_OUT_TOKEN.getCode(),
@@ -114,22 +109,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // 여기 도달하는 건 "정상 토큰" 또는 "토큰 없음" 두 경우뿐
         // 정상 처리 완료 후 다음 필터로 넘김
         filterChain.doFilter(request, response);
-    }
-
-
-    /**
-     * Authorization 헤더에서 Bearer 토큰을 추출한다.
-     *
-     * @param request HTTP 요청
-     * @return 순수 JWT 문자열, 없거나 형식이 잘못되면 null
-     */
-    private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
-        }
-        return null;
     }
 
     private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
