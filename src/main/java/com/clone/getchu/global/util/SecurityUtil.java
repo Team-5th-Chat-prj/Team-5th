@@ -13,14 +13,19 @@ public class SecurityUtil {
     }
 
     public static Long getCurrentMemberId() {
+        return getAuthenticatedUserDetails().getMemberId();
+    }
+
+    public static String getCurrentMemberNickname() {
+        return getAuthenticatedUserDetails().getNickname();
+    }
+
+    private static CustomUserDetails getAuthenticatedUserDetails() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() 
-            || authentication.getPrincipal().equals("anonymousUser")) {
-            throw new UnauthorizedException(ErrorCode.UNAUTHORIZED); 
+        if (!(authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof CustomUserDetails)) {
+            throw new UnauthorizedException(ErrorCode.UNAUTHORIZED);
         }
-
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        return userDetails.getMemberId();
+        return (CustomUserDetails) authentication.getPrincipal();
     }
 }

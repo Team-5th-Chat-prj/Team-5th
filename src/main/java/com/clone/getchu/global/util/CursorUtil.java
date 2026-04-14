@@ -11,11 +11,11 @@ public class CursorUtil {
 
     public static String encodeCursor(String rawCursor) {
         if (rawCursor == null) return null;
-        return Base64.getEncoder().encodeToString(rawCursor.getBytes(StandardCharsets.UTF-8));
+        return Base64.getEncoder().encodeToString(rawCursor.getBytes(StandardCharsets.UTF_8));
     }
 
     public static String decodeCursor(String encodedCursor) {
         if (encodedCursor == null) return null;
-        return new String(Base64.getDecoder().decode(encodedCursor), StandardCharsets.UTF-8);
+        return new String(Base64.getDecoder().decode(encodedCursor), StandardCharsets.UTF_8);
     }
 }
