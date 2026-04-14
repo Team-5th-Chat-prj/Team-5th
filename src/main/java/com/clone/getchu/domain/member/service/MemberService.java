@@ -1,7 +1,7 @@
 package com.clone.getchu.domain.member.service;
 
-import com.clone.getchu.domain.member.dto.reqeust.MemberUpdateRequest;
-import com.clone.getchu.domain.member.dto.reqeust.UpdatePasswordRequest;
+import com.clone.getchu.domain.member.dto.request.MemberUpdateRequest;
+import com.clone.getchu.domain.member.dto.request.UpdatePasswordRequest;
 import com.clone.getchu.domain.member.dto.response.MemberProfileResponse;
 import com.clone.getchu.domain.member.dto.response.MemberResponse;
 import com.clone.getchu.domain.member.entity.Member;
@@ -51,9 +51,18 @@ public class MemberService {
     public void updatePassword(Long memberId, UpdatePasswordRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 현재 비밀번호 일치 여부 검증
         if (!passwordEncoder.matches(request.oldPassword(), member.getPassword())) {
             throw new InvalidRequestException(ErrorCode.INVALID_PASSWORD);
         }
+
+        // 새 비밀번호가 현재 비밀번호와 동일하면 차단
+        // → 변경 의도 없는 요청을 허용하면 불필요한 해시 연산 + 보안 감사 로그 오염
+        if (passwordEncoder.matches(request.newPassword(), member.getPassword())) {
+            throw new InvalidRequestException(ErrorCode.SAME_AS_CURRENT_PASSWORD);
+        }
+
         member.updatePassword(passwordEncoder.encode(request.newPassword()));
     }
 

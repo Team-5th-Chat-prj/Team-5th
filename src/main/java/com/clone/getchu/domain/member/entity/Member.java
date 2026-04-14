@@ -40,8 +40,6 @@ public class Member extends BaseEntity {
 
     private String profileImageUrl;
     // 회원 권한 (현재 USER 단일값, 추후 ADMIN 확장 가능)
-    // DB에 "USER", "ADMIN" 형태로 저장 (ROLE_ 접두사 없이)
-    // CustomUserDetails에서 "ROLE_" + role 형태로 변환
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MemberRole role = MemberRole.USER;
@@ -50,26 +48,6 @@ public class Member extends BaseEntity {
     // true = 탈퇴한 회원, 목록/검색에서 제외
     @Column(nullable = false)
     private boolean deleted = false;
-    // soft delete 사용 안한 이유:
-    // 회원 탈퇴 시 추가 처리 필요
-    // - 등록 상품 비공개 처리
-    // - 진행중 거래 취소 처리
-    // 이런 비즈니스 로직을 직접 제어하는 게 유리
-
-    // TODO [v2] 거주지역 추가 예정
-    // - region 컬럼 추가 (예: "서울 강남구")
-    // - 동네 인증 기능 연동
-    // - 지역 기반 상품 검색 필터 적용
-    // private String region;
-
-    // TODO [v2] 회원 등급제 추가 예정
-    // - averageRating 기준으로 등급 계산
-    // - 🥕 새내기(1~2) / 😊 보통(3) / 😄 좋음(4) / 🌟 최고(5)
-    // - 프론트에서 배지 표시
-
-    // TODO [v2] 소프트 삭제 시 연관 데이터 처리 추가 예정
-    // - 등록 상품 비공개 처리 (Product.status → DELETED)
-    // - 진행중 거래 취소 처리 (Trade.status → CANCELLED)
 
     @Builder
     private Member(String email, String password, String nickname, String profileImageUrl) {
@@ -102,10 +80,31 @@ public class Member extends BaseEntity {
 
     public void update(String nickname, String profileImageUrl) {
         if (nickname != null) this.nickname = nickname;
-        if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+
+        // profileImageUrl 처리:
+        //   null        → 변경 의사 없음, 기존 값 유지
+        //   ""(빈 문자열) → 프론트가 명시적으로 이미지 삭제 요청, null로 초기화
+        //   URL 문자열   → 새 이미지 URL로 업데이트
+        if (profileImageUrl != null) {
+            this.profileImageUrl = profileImageUrl.isEmpty() ? null : profileImageUrl;
+        }
     }
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
 }
+// TODO [v2] 거주지역 추가 예정
+// - region 컬럼 추가 (예: "서울 강남구")
+// - 동네 인증 기능 연동
+// - 지역 기반 상품 검색 필터 적용
+// private String region;
+
+// TODO [v2] 회원 등급제 추가 예정
+// - averageRating 기준으로 등급 계산
+// - 🥕 새내기(1~2) / 😊 보통(3) / 😄 좋음(4) / 🌟 최고(5)
+// - 프론트에서 배지 표시
+
+// TODO [v2] 소프트 삭제 시 연관 데이터 처리 추가 예정
+// - 등록 상품 비공개 처리 (Product.status → DELETED)
+// - 진행중 거래 취소 처리 (Trade.status → CANCELLED)

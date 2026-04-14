@@ -1,7 +1,7 @@
 package com.clone.getchu.domain.member.controller;
 
-import com.clone.getchu.domain.member.dto.reqeust.MemberUpdateRequest;
-import com.clone.getchu.domain.member.dto.reqeust.UpdatePasswordRequest;
+import com.clone.getchu.domain.member.dto.request.MemberUpdateRequest;
+import com.clone.getchu.domain.member.dto.request.UpdatePasswordRequest;
 import com.clone.getchu.domain.member.dto.response.MemberProfileResponse;
 import com.clone.getchu.domain.member.dto.response.MemberResponse;
 import com.clone.getchu.domain.member.service.MemberService;
@@ -45,7 +45,7 @@ public class MemberController {
     }
 
     // 회원 비밀번호 변경
-    @PatchMapping("me/password")
+    @PatchMapping("/me/password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody UpdatePasswordRequest request) {
