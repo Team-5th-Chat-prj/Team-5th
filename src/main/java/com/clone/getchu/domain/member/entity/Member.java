@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Entity
 @Table(name = "members")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,8 +30,9 @@ public class Member extends BaseEntity {
 
     // 리뷰 평균 별점 (비정규화)
     // 리뷰 작성 시 단일 트랜잭션 내에서 함께 UPDATE
-    @Column(nullable = false)
-    private double averageRating = 0.0;
+    // DECIMAL(2,1): 부동소수점 오차 방지, 소수점 1자리 반올림 저장
+    @Column(nullable = false, precision = 2, scale = 1)
+    private BigDecimal averageRating = BigDecimal.ZERO;
     @Column(nullable = false)
     private int reviewCount = 0;
 
@@ -49,7 +53,7 @@ public class Member extends BaseEntity {
         this.email = email;
         this.password = password;
         this.nickname = nickname;
-        this.averageRating = 0.0;
+        this.averageRating = BigDecimal.ZERO;
         this.reviewCount = 0;
         this.role = MemberRole.USER;
         this.deleted = false;
@@ -58,8 +62,11 @@ public class Member extends BaseEntity {
     // TODO Review 도메인 추가 구현 예정
     public void updateReviewStats(int newRating) {
         // 새 평균=(기존 평균 * 기존 리뷰 수 + 새 별점) / (기존 리뷰 수 + 1)
-        this.averageRating = (this.averageRating * this.reviewCount + newRating)
-                / (this.reviewCount + 1);
+        BigDecimal newAvg = this.averageRating
+                .multiply(BigDecimal.valueOf(this.reviewCount))
+                .add(BigDecimal.valueOf(newRating))
+                .divide(BigDecimal.valueOf(this.reviewCount + 1), 1, RoundingMode.HALF_UP);
+        this.averageRating = newAvg;
         this.reviewCount++;
     }
 

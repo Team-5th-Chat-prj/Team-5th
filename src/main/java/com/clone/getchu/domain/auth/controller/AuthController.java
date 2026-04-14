@@ -89,6 +89,7 @@ public class AuthController {
      * <p>
      * 성공: 200 OK
      */
+    @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletRequest request) {
