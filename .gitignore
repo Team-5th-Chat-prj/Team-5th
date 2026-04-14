@@ -19,3 +19,7 @@ bin/
 # --- IntelliJ Gradle ---
 .idea/gradle.xml
 .idea/libraries/
+
+# --- Custom Secrets & Test Files ---
+.env
+chat-test.html
