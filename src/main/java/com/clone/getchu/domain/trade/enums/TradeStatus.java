@@ -26,7 +26,7 @@ public enum TradeStatus {
 
         @Override
         public TradeStatus cancel() {
-            throw new UnsupportedOperationException("판매중 상태에서는 취소할 수 없습니다.");
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
     },
 
@@ -60,12 +60,12 @@ public enum TradeStatus {
     SOLD {
         @Override
         public TradeStatus next() {
-            throw new BusinessException(INVALID_STATUS_TRANSITION);
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
         @Override
         public TradeStatus cancel() {
-            throw new BusinessException(INVALID_STATUS_TRANSITION);
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
     };
 
