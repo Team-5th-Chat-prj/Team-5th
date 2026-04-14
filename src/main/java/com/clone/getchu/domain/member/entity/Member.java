@@ -16,7 +16,8 @@ import java.math.RoundingMode;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Member extends BaseEntity {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -63,11 +64,10 @@ public class Member extends BaseEntity {
     public void updateReviewStats(int newRating) {
         // 새 평균=(기존 평균 * 기존 리뷰 수 + 새 별점) / (기존 리뷰 수 + 1)
         BigDecimal newAvg = this.averageRating
-                .multiply(BigDecimal.valueOf(this.reviewCount))
+                .multiply(BigDecimal.valueOf(this.reviewCount - 1))
                 .add(BigDecimal.valueOf(newRating))
-                .divide(BigDecimal.valueOf(this.reviewCount + 1), 1, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(this.reviewCount), 1, RoundingMode.HALF_UP);
         this.averageRating = newAvg;
         this.reviewCount++;
     }
-
 }

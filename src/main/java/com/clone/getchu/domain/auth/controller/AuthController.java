@@ -7,10 +7,7 @@ import com.clone.getchu.domain.auth.dto.SignupRequest;
 import com.clone.getchu.domain.auth.dto.SignupResponse;
 import com.clone.getchu.domain.auth.service.AuthService;
 import com.clone.getchu.global.common.ApiResponse;
-import com.clone.getchu.global.exception.ErrorCode;
-import com.clone.getchu.global.exception.UnauthorizedException;
 import com.clone.getchu.global.security.CustomUserDetails;
-import com.clone.getchu.global.security.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final AuthService authService;
-    private final JwtProvider jwtProvider;
 
     /**
      * 회원가입
@@ -93,13 +87,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletRequest request) {
-        // SecurityContext에 저장된 인증 정보를 통해 안전하게 memberId를 전달합니다.
-        // 클라이언트가 보낸 원본 토큰 문자열은 request에서 추출합니다.
-        String accessToken = jwtProvider.resolveToken(request);
-        if (accessToken == null) {
-            throw new UnauthorizedException(ErrorCode.UNAUTHORIZED);
-        }
-        authService.logout(userDetails.getMemberId(), accessToken);
+        authService.logout(userDetails.getMemberId(), request);
         return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다.", null));
     }
 }
