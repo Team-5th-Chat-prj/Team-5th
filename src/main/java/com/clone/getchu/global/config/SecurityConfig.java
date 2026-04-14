@@ -63,7 +63,8 @@ public class SecurityConfig {
             )
             
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/signup", "/auth/login").permitAll()
+                // /auth/refresh: AT가 만료된 상태에서 호출되므로 인증 없이 허용
+                .requestMatchers("/auth/signup", "/auth/login", "/auth/refresh").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products", "/products/**", "/categories", "/search/popular").permitAll()
                 .requestMatchers(HttpMethod.GET, "/members/*/reviews").permitAll()
                 .requestMatchers("/ws-chat/**").permitAll()

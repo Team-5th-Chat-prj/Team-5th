@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.validation.FieldError;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Getter
@@ -24,7 +24,7 @@ public class ErrorResponse {
     private ErrorResponse(String code, String message) {
         this.code = code;
         this.message = message;
-        this.timestamp = LocalDateTime.now().toString();
+        this.timestamp = Instant.now().toString();
     }
 
     // 일반 비즈니스 예외 - ErrorCode에 정의된 기본 메시지 사용
