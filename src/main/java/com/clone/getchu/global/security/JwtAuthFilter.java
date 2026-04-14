@@ -62,8 +62,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             // validateToken() 은 예외를 내부에서 swallow하므로 만료/무효 구분이 불가.
             // validateTokenOrThrow() 로 예외를 전파받아 정확한 에러코드를 반환한다.
-            // 로그아웃된 토큰(블랙리스트) 차단 — Redis에 "BL:{token}" 키 존재 여부 확인
             jwtProvider.validateTokenOrThrow(jwt);
+
+            // 로그아웃된 토큰(블랙리스트) 차단 — Redis에 "BL:{token}" 키 존재 여부 확인
             if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RedisKeyConstants.blacklistKey(jwt)))) {
                 log.warn("블랙리스트 처리된 Access Token입니다. code={}, message={}",
                         ErrorCode.LOGGED_OUT_TOKEN.getCode(),
@@ -71,6 +72,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 writeErrorResponse(response, ErrorCode.LOGGED_OUT_TOKEN);
                 return;
             }
+
+            // 남은 만료 시간을 request 속성으로 저장 — logout 시 서비스 계층에서 재파싱 없이 사용
+            long remaining = jwtProvider.getRemainingExpiration(jwt);
+            request.setAttribute("jwt.token", jwt);
+            request.setAttribute("jwt.remaining", remaining);
 
             Authentication authentication = jwtProvider.getAuthentication(jwt);
             // SecurityContext에 인증 정보 저장 - 이후 요청 처리 동안 어디서든 꺼낼 수 있음

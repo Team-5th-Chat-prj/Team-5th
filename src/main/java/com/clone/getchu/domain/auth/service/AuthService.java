@@ -146,16 +146,21 @@ public class AuthService {
      * → JwtAuthFilter에서 매 요청마다 블랙리스트 조회해 차단
      * 2. Redis에서 RT 삭제 → 이후 재발급 요청 불가
      * <p>
-     * [참고] AT 만료(15분) 후에는 블랙리스트 키가 자동 삭제되므로 Redis 공간 낭비 없음
+     * [참고] AT 유효성 검증 및 남은 만료 시간 계산은 JwtAuthFilter에서 선행 처리됨.
+     * 서비스 계층은 필터가 request 속성("jwt.token", "jwt.remaining")으로 전달한 값을 그대로 사용해
+     * 조작·만료 토큰에 대한 재파싱 예외 위험을 제거함.
+     * [참고] AT 만료 후 블랙리스트 키가 자동 삭제되므로 Redis 공간 낭비 없음
      * [참고] DB 작업 없이 Redis만 사용하므로 @Transactional 미적용
      */
     public void logout(Long memberId, HttpServletRequest request) {
-        String accessToken = jwtProvider.resolveToken(request);
-        if (accessToken == null) {
+        // JwtAuthFilter가 검증 후 저장한 속성에서 토큰과 남은 만료 시간을 읽음
+        String accessToken = (String) request.getAttribute("jwt.token");
+        Long remaining = (Long) request.getAttribute("jwt.remaining");
+
+        if (accessToken == null || remaining == null) {
             throw new UnauthorizedException(ErrorCode.UNAUTHORIZED);
         }
 
-        long remaining = jwtProvider.getRemainingExpiration(accessToken);
         if (remaining > 0) {
             stringRedisTemplate.opsForValue().set(
                     RedisKeyConstants.blacklistKey(accessToken),
@@ -164,7 +169,6 @@ public class AuthService {
                     TimeUnit.MILLISECONDS
             );
         }
-        // SecurityUtil 대신 파라미터로 받은 memberId 사용
         stringRedisTemplate.delete(RedisKeyConstants.refreshTokenKey(memberId));
     }
 }

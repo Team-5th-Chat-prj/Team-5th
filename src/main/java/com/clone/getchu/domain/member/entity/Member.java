@@ -7,12 +7,14 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Entity
 @Table(name = "members")
+@SQLRestriction("deleted = false")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Member extends BaseEntity {
@@ -62,11 +64,12 @@ public class Member extends BaseEntity {
 
     // TODO Review 도메인 추가 구현 예정
     public void updateReviewStats(int newRating) {
-        // 새 평균=(기존 평균 * 기존 리뷰 수 + 새 별점) / (기존 리뷰 수 + 1)
+        // 새 평균 = (기존 평균 * 기존 리뷰 수 + 새 별점) / (기존 리뷰 수 + 1)
+        // reviewCount는 계산 후 증가시키므로 현재 값이 곧 "기존 리뷰 수"
         BigDecimal newAvg = this.averageRating
-                .multiply(BigDecimal.valueOf(this.reviewCount - 1))
+                .multiply(BigDecimal.valueOf(this.reviewCount))
                 .add(BigDecimal.valueOf(newRating))
-                .divide(BigDecimal.valueOf(this.reviewCount), 1, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(this.reviewCount + 1), 1, RoundingMode.HALF_UP);
         this.averageRating = newAvg;
         this.reviewCount++;
     }
