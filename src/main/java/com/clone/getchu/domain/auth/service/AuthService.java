@@ -117,6 +117,10 @@ public class AuthService {
         String storedToken = stringRedisTemplate.opsForValue().get(rtKey);
 
         if (storedToken == null || !storedToken.equals(oldRefreshToken)) {
+            // [보안] 저장된 토큰과 불일치 → 토큰 탈취 가능성 → 즉시 로그아웃 처리
+            if (storedToken != null) {
+                stringRedisTemplate.delete(rtKey);
+            }
             throw new UnauthorizedException(ErrorCode.TOKEN_INVALID);
         }
 
