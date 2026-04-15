@@ -8,6 +8,7 @@ import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.trade.repository.TradeRepository;
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
+import com.clone.getchu.global.exception.BusinessException;
 import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class TradeService {
 
     private final TradeRepository tradeRepository;
@@ -30,6 +30,7 @@ public class TradeService {
      * 3. 상품 상태 전이(proceed) — 내부적으로 TradeStatus.SALE.next() 호출
      * 4. Trade 생성 저장
      */
+//    @Transactional
 //    public void reserveProduct(Long productId, Long buyerId) {
 //        Product product = productRepository.findById(productId)
 //                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -53,54 +54,43 @@ public class TradeService {
 //        tradeRepository.save(trade);
 //    }
 
-    /**
-     * 거래 진행 (RESERVED → TRADING)
-     * Trade와 Product 상태를 동시에 다음 단계로 이동합니다.
-     */
-    public void proceedTrade(Long tradeId) {
-        Trade trade = findTradeById(tradeId);
+    @Transactional
+    public void updateTradeStatus(Long tradeId, TradeStatus targetStatus, Long memberId){
+        Trade trade = tradeRepository.findById(tradeId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TRADE_NOT_FOUND));
 
-        trade.proceed();
-        //trade.getProduct().proceed();
+        //거래의 당사자가 맞는지 검증
+        trade.validateParticipant(memberId);
+
+        if(targetStatus == TradeStatus.SALE){
+            trade.cancel();
+        } else {
+            // "진행" 흐름: SALE -> RESERVED -> TRADING -> SOLD 순차 진행
+            validateTransition(trade.getStatus(), targetStatus);
+            trade.proceed();
+        }
+
+        //product 상태 동기화
+
+    }
+    //단계 건너뛰기, 동일 상태 중복 요청 방지
+    private void validateTransition(TradeStatus currentStatus, TradeStatus targetStatus){
+        if (currentStatus.next() != targetStatus){
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
     }
 
-    /**
-     * 거래 취소 (RESERVED | TRADING → SALE)
-     * Trade와 Product 상태를 SALE로 돌립니다.
-     */
-    public void cancelTrade(Long tradeId) {
-        Trade trade = findTradeById(tradeId);
-
-        trade.cancel();
-        //trade.getProduct().cancel();
-    }
-
-    /**
-     * 거래 완료 (TRADING → SOLD)
-     * Trade와 Product 상태를 SOLD로 변경합니다.
-     */
-    public void completeTrade(Long tradeId) {
-        Trade trade = findTradeById(tradeId);
-
-        // TRADING → SOLD: Enum에 전이 위임
-        trade.proceed();
-        //trade.getProduct().proceed();
-    }
 
     //거래 상세 조회
     @Transactional(readOnly = true)
     public GetTradeDetailResponse getTradeDetail(Long tradeId, Long memberId) {
-        Trade trade = findTradeById(tradeId);
+        Trade trade = tradeRepository.findById(tradeId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TRADE_NOT_FOUND));
 
         //거래 참여자 검증
         trade.validateParticipant(memberId);
         
         return GetTradeDetailResponse.from(trade);
-    }
-
-    private Trade findTradeById(Long tradeId) {
-        return tradeRepository.findById(tradeId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.TRADE_NOT_FOUND));
     }
 }
 

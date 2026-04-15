@@ -36,14 +36,10 @@ public class TradeController {
     @PatchMapping("/trades/{tradeId}/status")
     public ResponseEntity<ApiResponse<Void>> changeTradeStatus(
             @PathVariable Long tradeId,
-            @Valid @RequestBody TradeStatusUpdateRequest request) {
-
-        switch (request.status()) {
-            case RESERVED -> tradeService.proceedTrade(tradeId);
-            case TRADING  -> tradeService.completeTrade(tradeId);
-            case SALE     -> tradeService.cancelTrade(tradeId);
-            default       -> throw new IllegalArgumentException("처리할 수 없는 status 값입니다: " + request.status());
-        }
+            @Valid @RequestBody TradeStatusUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        tradeService.updateTradeStatus(tradeId, request.status(), userDetails.getMemberId());
 
         return ResponseEntity.ok(ApiResponse.success());
     }
@@ -52,8 +48,8 @@ public class TradeController {
     @GetMapping("/trades/{tradeId}")
     public ResponseEntity<ApiResponse<GetTradeDetailResponse>> getTradeDetail(
             @PathVariable Long tradeId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
         GetTradeDetailResponse response = tradeService.getTradeDetail(tradeId, userDetails.getMemberId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
