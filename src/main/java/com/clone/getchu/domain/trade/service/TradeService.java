@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TradeService {
 
     private final TradeRepository tradeRepository;
-    private final ProductRepository productRepository;
+    //private final ProductRepository productRepository;
     private final MemberRepository memberRepository;
 
     /**
