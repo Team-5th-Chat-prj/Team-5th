@@ -8,6 +8,7 @@ import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.ForbiddenException;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -15,8 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "trades")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Trade extends BaseEntity {
 
     @Id
@@ -29,20 +29,19 @@ public class Trade extends BaseEntity {
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @JoinColumn(name = "buyer_id", nullable = false)
+    private Member buyer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private Member seller;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private TradeStatus status;
 
-    @Column(name = "reserved_at")
     private LocalDateTime reservedAt;
-
-    @Column(name = "traded_at")
     private LocalDateTime tradedAt;
-
-    @Column(name = "sold_at")
     private LocalDateTime soldAt;
 
     //전이: SALE → RESERVED, RESERVED → TRADING, TRADING → SOLD
@@ -51,29 +50,39 @@ public class Trade extends BaseEntity {
         recordTimestamp(this.status);
     }
 
-    //취소 가능: RESERVED → SALE, TRADING → SALE
+    //취소: RESERVED → SALE, TRADING → SALE
     public void cancel() {
         this.status = this.status.cancel();
+        clearTimestamps(); //취소시 기록 시간 초기화
     }
 
-    //거래 참여자(판매자 또는 구매자) 여부를 검증합니다.
-    //판매자도 구매자도 아닌 경우 ForbiddenException(TRADE_FORBIDDEN)을 발생시킵니다.
+    //거래 참여자 검증
     public void validateParticipant(Long memberId) {
-        boolean isBuyer  = this.member.getId().equals(memberId);
-        boolean isSeller = this.product.getSeller().getId().equals(memberId);
-        if (!isBuyer && !isSeller) {
+        if (!isBuyer(memberId) && !isSeller(memberId)) {
             throw new ForbiddenException(ErrorCode.TRADE_FORBIDDEN);
         }
     }
+    public boolean isBuyer(Long memberId){
+        return this.buyer.getId().equals(memberId);
+    }
+    public boolean isSeller(Long memberId){
+        return this.seller.getId().equals(memberId);
+    }
 
-    //상태 전이 시점에 맞는 타임스탬프를 기록합니다.
+    //상태 전이 시점에 맞는 타임스탬프를 기록
     private void recordTimestamp(TradeStatus nextStatus) {
         LocalDateTime now = LocalDateTime.now();
         switch (nextStatus) {
             case RESERVED -> this.reservedAt = now;
             case TRADING  -> this.tradedAt   = now;
             case SOLD     -> this.soldAt      = now;
-            default -> { /* SALE(취소)은 타임스탬프 불필요 */ }
         }
+    }
+
+    //취소시 모든 거래 진행 관련 타임스탬프를 초기화
+    private void clearTimestamps(){
+        this.reservedAt = null;
+        this.tradedAt = null;
+        this.soldAt = null;
     }
 }
