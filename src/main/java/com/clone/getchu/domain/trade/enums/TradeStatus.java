@@ -57,8 +57,21 @@ public enum TradeStatus {
         }
     },
 
-    //거래완료: 종단 상태 — 다음 단계도, 취소도 불가
+    //거래완료: 리뷰 작성 가능, 취소(SALE) 불가
     SOLD {
+        @Override
+        public TradeStatus next() {
+            return REVIEWED;
+        }
+
+        @Override
+        public TradeStatus cancel() {
+            throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+    },
+
+    //리뷰 작성: 다음단계와 취소(SALE) 불가
+    REVIEWED {
         @Override
         public TradeStatus next() {
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
