@@ -2,6 +2,7 @@ package com.clone.getchu.domain.product.entity;
 
 import com.clone.getchu.domain.category.entity.Category;
 import com.clone.getchu.domain.member.entity.Member;
+import com.clone.getchu.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -13,13 +14,15 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "PRODUCT")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-public class Product {
+public class Product extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,16 +52,11 @@ public class Product {
     @ColumnDefault("0")
     private Integer likeCount = 0;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
 
     // --- Builder 패턴 ---
     @Builder
@@ -75,12 +73,22 @@ public class Product {
     }
 
     // --- 비즈니스 로직 ---
-    public void updateProduct(String title, String description, Integer price, String status, Category category) {
-        this.title = title;
-        this.description = description;
-        this.price = price;
-        this.status = status;
-        this.category = category;
+    public void updateProduct(String title, String description, Integer price, String status, Category category, List<String> imageUrls) {
+        if (title != null) this.title = title;
+        if (description != null) this.description = description;
+        if (price != null) this.price = price;
+        if (status != null) this.status = status;
+        if (category != null) this.category = category;
+        if (imageUrls != null) {
+            this.images.clear();
+            imageUrls.forEach(url -> this.images.add(new ProductImage(url, this)));
+        }
+    }
+
+    public void updateImages(List<String> newUrls) {
+        if (newUrls == null) return;
+        this.images.clear();
+        newUrls.forEach(url -> this.images.add(new ProductImage(url, this)));
     }
 
     public void incrementLikeCount() {
