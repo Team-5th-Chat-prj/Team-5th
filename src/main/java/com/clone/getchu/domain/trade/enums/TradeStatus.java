@@ -1,6 +1,7 @@
 package com.clone.getchu.domain.trade.enums;
 
 import com.clone.getchu.global.exception.BusinessException;
+import com.clone.getchu.global.exception.ErrorCode;
 
 import static com.clone.getchu.global.exception.ErrorCode.INVALID_STATUS_TRANSITION;
 
