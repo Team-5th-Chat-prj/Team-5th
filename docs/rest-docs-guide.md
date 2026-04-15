@@ -95,8 +95,10 @@ void methodName() throws Exception {
     given(xxxService.someMethod(any())).willReturn(/* 응답 픽스처 */);
 
     // 2. when & then: 요청 수행 + 상태 검증 + 문서화
+    // ⚠️ requestHeaders()에 Authorization을 선언했다면 실제 요청에도 반드시 헤더를 포함해야 합니다.
+    //    REST Docs는 문서화한 헤더가 실제 요청에 존재하는지 검증합니다.
     mockMvc.perform(get("/path")
-                    .header("Authorization", "Bearer test-token")
+                    .header("Authorization", "Bearer test-token")  // 실제 값은 임의 문자열 OK — @WithMockCustomUser가 인증 처리
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"))
@@ -266,11 +268,11 @@ given(service.update(any(CustomUserDetails.class), any(UpdateRequest.class))).wi
 ## 9. OpenAPI yaml 생성 방법
 
 ```bash
-# 테스트 실행 → 스니펫 생성 → yaml 생성까지 한 번에
-./gradlew test openapi3
+# 테스트 실행 → 스니펫 생성 → yaml 생성 → docs 복사까지 한 번에
+./gradlew copyOpenApi
 
 # 생성 위치
-build/api-spec/openapi3.yaml
+docs/api-spec/openapi3.yaml
 ```
 
 테스트가 **하나라도 실패하면 yaml이 생성되지 않습니다.**  

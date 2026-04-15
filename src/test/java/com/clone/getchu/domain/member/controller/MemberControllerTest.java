@@ -13,10 +13,6 @@ import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -59,15 +55,16 @@ class MemberControllerTest extends RestDocsSupport {
     MemberService memberService;
 
     @MockBean
-    AuthService authService;  // ⬅ 추가
+    AuthService authService;
 
-    @MockBean
-    private JwtAuthFilter jwtAuthFilter;
+    // SecurityConfig 생성자 의존성 — @WebMvcTest는 Filter가 아닌 @Component를 스캔하지 않음
     @MockBean
     private JwtAuthEntryPoint jwtAuthEntryPoint;
     @MockBean
     private JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
+    // JwtAuthFilter 빈 생성에 필요 — @WebMvcTest는 JwtProvider(@Component)를 로드하지 않음
+    // mock이므로 resolveToken()은 null 반환 → 필터가 JWT 없음으로 판단 → chain.doFilter() 통과
     @MockBean
     private JwtProvider jwtProvider;
 
@@ -77,17 +74,6 @@ class MemberControllerTest extends RestDocsSupport {
     private static final Long MEMBER_ID = 1L;
     private static final String EMAIL = "test@test.com";
     private static final String NICKNAME = "테스터";
-
-    @BeforeEach
-    void setUpJwtFilter() throws Exception {
-        doAnswer(invocation -> {
-            HttpServletRequest req = invocation.getArgument(0);
-            HttpServletResponse res = invocation.getArgument(1);
-            FilterChain chain = invocation.getArgument(2);
-            chain.doFilter(req, res);
-            return null;
-        }).when(jwtAuthFilter).doFilter(any(), any(), any());
-    }
 
     // ── 공통 응답 픽스처 ──────────────────────────────────────────────────────
 
@@ -119,8 +105,7 @@ class MemberControllerTest extends RestDocsSupport {
 
         // when & then
         mockMvc.perform(get("/members/me")
-                        .header("Authorization", "Bearer test-token")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andDo(MockMvcRestDocumentationWrapper.document("member-get-me",
                         resource(ResourceSnippetParameters.builder()

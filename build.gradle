@@ -100,3 +100,7 @@ openapi3 {
     version = '1.0.0'
     format = 'yaml'
 }
+task copyOpenApi(type: Copy, dependsOn: 'openapi3') {
+    from 'build/api-spec/openapi3.yaml'
+    into 'docs/api-spec'
+}

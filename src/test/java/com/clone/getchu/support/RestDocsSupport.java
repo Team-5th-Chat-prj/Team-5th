@@ -1,14 +1,13 @@
 package com.clone.getchu.support;
 
 import com.clone.getchu.global.config.SecurityConfig;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -17,9 +16,9 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
-@ExtendWith({RestDocumentationExtension.class, SpringExtension.class})
-@WebMvcTest
-@AutoConfigureMockMvc
+// @WebMvcTest와 @AutoConfigureMockMvc는 각 테스트 클래스에서 선언합니다.
+// 기반 클래스에 @WebMvcTest를 두면 컨트롤러를 특정하지 않아 모든 @Controller를 로드하려 시도합니다.
+@ExtendWith(RestDocumentationExtension.class)
 @Import(SecurityConfig.class)
 public abstract class RestDocsSupport {
 
@@ -38,8 +37,9 @@ public abstract class RestDocsSupport {
                 .build();
     }
 
-    // JWT 토큰 헬퍼
-    protected String getBearerToken() {
-        return "Bearer test-token"; // 테스트용 토큰
+    // 테스트 간 SecurityContext 격리 — @WithMockCustomUser가 설정한 인증 정보가 다음 테스트로 누출되지 않도록 보장
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 }
