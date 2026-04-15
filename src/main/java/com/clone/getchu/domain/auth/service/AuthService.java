@@ -49,6 +49,7 @@ public class AuthService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .nickname(request.nickname())
+                .profileImageUrl(request.profileImageUrl()) // 추가
                 .build();
 
         try {

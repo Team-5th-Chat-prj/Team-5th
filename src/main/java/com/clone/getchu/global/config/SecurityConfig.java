@@ -51,27 +51,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
-            
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(jwtAuthEntryPoint)
-                .accessDeniedHandler(jwtAccessDeniedHandler)
-            )
-            
-            .authorizeHttpRequests(auth -> auth
-                // /auth/refresh: AT가 만료된 상태에서 호출되므로 인증 없이 허용
-                .requestMatchers("/auth/signup", "/auth/login", "/auth/refresh").permitAll()
-                .requestMatchers(HttpMethod.GET, "/products", "/products/**", "/categories", "/search/popular").permitAll()
-                .requestMatchers(HttpMethod.GET, "/members/*/reviews").permitAll()
-                .requestMatchers("/ws-chat/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                )
+
+                .authorizeHttpRequests(auth -> auth
+                        // /auth/refresh: AT가 만료된 상태에서 호출되므로 인증 없이 허용
+                        .requestMatchers("/auth/signup", "/auth/login", "/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products", "/products/**", "/categories", "/search/popular").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/members/*/reviews").permitAll()
+                        // 타인 프로필 조회 추가
+                        .requestMatchers(HttpMethod.GET, "/members/*").permitAll()
+                        .requestMatchers("/ws-chat/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
