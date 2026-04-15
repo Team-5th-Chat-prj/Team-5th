@@ -28,5 +28,11 @@ public record SignupRequest(
 
         @NotBlank(message = "닉네임은 필수입니다.")
         @Size(min = 2, max = 20, message = "닉네임은 2~20자여야 합니다.")
-        String nickname
+        String nickname,
+
+        // 프로필 이미지 URL (선택, null 허용)
+        // 미입력 시 프론트에서 기본 이미지 표시
+        @Pattern(regexp = "^(https?://.*)?$", message = "올바른 URL 형식이어야 합니다.")
+        String profileImageUrl
+
 ) {}

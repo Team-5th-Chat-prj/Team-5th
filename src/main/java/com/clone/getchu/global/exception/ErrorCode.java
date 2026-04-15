@@ -18,6 +18,8 @@ public enum ErrorCode {
 
     // ===== MEMBER (M) =====
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "존재하지 않는 회원입니다."),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "M002", "현재 비밀번호가 올바르지 않습니다."),
+    SAME_AS_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "M003", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
 
     // ===== PRODUCT (P) =====
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "존재하지 않는 상품입니다."),

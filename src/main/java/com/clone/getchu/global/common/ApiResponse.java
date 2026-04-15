@@ -20,11 +20,9 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> success() {
         return new ApiResponse<>(SUCCESS_CODE, SUCCESS_MESSAGE, null);
     }
-
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(SUCCESS_CODE, SUCCESS_MESSAGE, data);
     }
-
     public static <T> ApiResponse<T> success(String message, T data) {
         return new ApiResponse<>(SUCCESS_CODE, message, data);
     }
