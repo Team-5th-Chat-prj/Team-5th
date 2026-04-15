@@ -73,7 +73,7 @@ public class TradeService {
         //product 상태 동기화
 
     }
-    //단계 건너뛰기, 동일 상태 중복 요청 방지
+    //상태 전이 검증
     private void validateTransition(TradeStatus currentStatus, TradeStatus targetStatus){
         if (currentStatus.next() != targetStatus){
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
@@ -84,7 +84,7 @@ public class TradeService {
     //거래 상세 조회
     @Transactional(readOnly = true)
     public GetTradeDetailResponse getTradeDetail(Long tradeId, Long memberId) {
-        Trade trade = tradeRepository.findById(tradeId)
+        Trade trade = tradeRepository.findWithAllById(tradeId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.TRADE_NOT_FOUND));
 
         //거래 참여자 검증
