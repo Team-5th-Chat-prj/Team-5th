@@ -2,6 +2,7 @@ package com.clone.getchu.domain.trade.service;
 
 import com.clone.getchu.domain.product.entity.Product;
 import com.clone.getchu.domain.product.repository.ProductRepository;
+import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
 import com.clone.getchu.domain.trade.entity.Trade;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
@@ -14,6 +15,8 @@ import com.clone.getchu.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -80,7 +83,6 @@ public class TradeService {
         }
     }
 
-
     //거래 상세 조회
     @Transactional(readOnly = true)
     public GetTradeDetailResponse getTradeDetail(Long tradeId, Long memberId) {
@@ -91,6 +93,24 @@ public class TradeService {
         trade.validateParticipant(memberId);
         
         return GetTradeDetailResponse.from(trade);
+    }
+
+    //거래 목록 조회
+    @Transactional(readOnly = true)
+    public List<GetAllTradeResponse> getMyTrade(Long memberId, String role){
+        List<Trade> trades;
+
+        if("selling".equals(role)){
+            trades = tradeRepository.findAllBySellerIdOrderByCreatedAtDesc(memberId);
+        } else if ("buying".equals(role)) {
+            trades = tradeRepository.findAllByBuyerIdOrderByCreatedAtDesc(memberId);
+        } else {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        return trades.stream()
+                .map(GetAllTradeResponse::from)
+                .toList();
     }
 }
 

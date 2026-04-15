@@ -1,6 +1,7 @@
 package com.clone.getchu.domain.trade.controller;
 
 import com.clone.getchu.domain.trade.dto.request.TradeStatusUpdateRequest;
+import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
 import com.clone.getchu.domain.trade.service.TradeService;
 import com.clone.getchu.global.common.ApiResponse;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,13 +29,7 @@ public class TradeController {
 //        return ResponseEntity.ok(ApiResponse.success());
 //    }
 
-    /**
-     * 거래 상태 변경
-     * request.status() 에 따라 서비스 메서드를 분기합니다.
-     *   - RESERVED : proceedTrade  (RESERVED → TRADING)
-     *   - TRADING  : completeTrade (TRADING  → SOLD)
-     *   - SALE     : cancelTrade   (현재 상태 → SALE 취소)
-     */
+
     @PatchMapping("/trades/{tradeId}/status")
     public ResponseEntity<ApiResponse<Void>> changeTradeStatus(
             @PathVariable Long tradeId,
@@ -52,6 +49,16 @@ public class TradeController {
     ) {
         GetTradeDetailResponse response = tradeService.getTradeDetail(tradeId, userDetails.getMemberId());
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    //자신의 거래 리스트 조회
+    @GetMapping("/members/me/trades")
+    public ResponseEntity<ApiResponse<List<GetAllTradeResponse>>> getMyTrades(
+            @RequestParam(name = "role") String role,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ){
+        List<GetAllTradeResponse> responses = tradeService.getMyTrade(userDetails.getMemberId(), role);
+        return ResponseEntity.ok(ApiResponse.success(responses));
     }
 }
 

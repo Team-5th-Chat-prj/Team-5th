@@ -13,4 +13,12 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     @EntityGraph(attributePaths = {"product", "product.seller", "buyer", "seller"})
     Optional<Trade> findWithAllById(Long id);
 
+    // 나의 판매 내역 조회
+    @EntityGraph(attributePaths = {"product", "buyer", "seller"})
+    List<Trade> findAllBySellerIdOrderByCreatedAtDesc(Long sellerId);
+
+    // 나의 구매 내역 조회
+    @EntityGraph(attributePaths = {"product", "buyer", "seller"})
+    List<Trade> findAllByBuyerIdOrderByCreatedAtDesc(Long buyerId);
+
 }
