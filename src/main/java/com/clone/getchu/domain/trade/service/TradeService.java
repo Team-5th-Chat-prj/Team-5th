@@ -13,6 +13,7 @@ import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.global.exception.BusinessException;
 import com.clone.getchu.global.exception.ErrorCode;
+import com.clone.getchu.global.exception.ForbiddenException;
 import com.clone.getchu.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,11 @@ public class TradeService {
     public TradeReserveResponse reserveProduct(Long productId, Long buyerId, Long sellerId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        //상품 소유자 확인
+        if(!product.getSeller().getId().equals(sellerId)){
+            throw new ForbiddenException(ErrorCode.TRADE_FORBIDDEN);
+        }
 
         Member buyer = memberRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
