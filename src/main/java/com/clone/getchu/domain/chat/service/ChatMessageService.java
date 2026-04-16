@@ -35,23 +35,23 @@ public class ChatMessageService {
      */
     @Transactional
     public void sendMessage(ChatMessageRequest request, Long senderId, String senderNickname) {
-        ChatRoom chatRoom = chatRoomService.validateAndGetChatRoom(request.getChatRoomId(), senderId);
+        ChatRoom chatRoom = chatRoomService.validateAndGetChatRoom(request.chatRoomId(), senderId);
 
         // 메시지 저장
-        ChatMessage message = ChatMessage.create(
-                request.getChatRoomId(),
-                senderId,
-                senderNickname,
-                request.getContent()
-        );
+        ChatMessage message = ChatMessage.builder()
+                .chatRoomId(request.chatRoomId())
+                .senderId(senderId)
+                .senderNickname(senderNickname)
+                .content(request.content())
+                .build();
         chatMessageRepository.save(message);
 
         // 채팅방 lastMessageAt 갱신
         chatRoom.updateLastMessageAt(LocalDateTime.now());
 
         // STOMP 브로드캐스트 → /topic/room.{chatRoomId}
-        ChatMessageResponse response = new ChatMessageResponse(message);
-        messagingTemplate.convertAndSend("/topic/room." + request.getChatRoomId(), response);
+        ChatMessageResponse response = ChatMessageResponse.from(message);
+        messagingTemplate.convertAndSend("/topic/room." + request.chatRoomId(), response);
     }
 
     /**
@@ -85,7 +85,7 @@ public class ChatMessageService {
                 : null;
 
         List<ChatMessageResponse> content = messages.stream()
-                .map(ChatMessageResponse::new)
+                .map(ChatMessageResponse::from)
                 .collect(Collectors.toList());
 
         return new CursorPageResponse<>(content, nextCursor, hasNext);

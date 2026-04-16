@@ -36,9 +36,9 @@ public class ChatRoomController {
             @Valid @RequestBody CreateChatRoomRequest request
     ) {
         Long buyerId = SecurityUtil.getCurrentMemberId();
-        ChatRoomResponse response = chatRoomService.createOrGetChatRoom(buyerId, request.getSellerId(), request);
+        ChatRoomResponse response = chatRoomService.createOrGetChatRoom(buyerId, request.sellerId(), request);
 
-        if (response.isCreated()) {
+        if (response.created()) {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("채팅방이 생성되었습니다.", response));
         }

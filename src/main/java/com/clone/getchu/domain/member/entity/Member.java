@@ -63,12 +63,12 @@ public class Member extends BaseEntity {
 
     // TODO [v2] Review 도메인 구현 후 연동 예정
     // - 리뷰 작성 시 updateReviewStats() 호출 / 거래 완료(SOLD) 상태 구매자만 작성 가능
-    public void updateReviewStats(int newRating) {
+    public void updateReviewStats(BigDecimal newRating) {
         // 새 평균 = (기존 평균 * 기존 리뷰 수 + 새 별점) / (기존 리뷰 수 + 1)
         // reviewCount는 계산 후 증가시키므로 현재 값이 곧 "기존 리뷰 수"
         BigDecimal newAvg = this.averageRating
                 .multiply(BigDecimal.valueOf(this.reviewCount))
-                .add(BigDecimal.valueOf(newRating))
+                .add(newRating)
                 .divide(BigDecimal.valueOf(this.reviewCount + 1), 1, RoundingMode.HALF_UP);
         this.averageRating = newAvg;
         this.reviewCount++;
