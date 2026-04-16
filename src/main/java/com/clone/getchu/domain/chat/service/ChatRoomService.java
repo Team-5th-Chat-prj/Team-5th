@@ -65,42 +65,7 @@ public class ChatRoomService {
      */
     @Transactional(readOnly = true)
     public List<ChatRoomSummaryResponse> getMyChatRooms(Long memberId) {
-        List<ChatRoom> chatRooms = chatRoomRepository
-                .findByBuyerIdOrSellerIdOrderByLastMessageAtDesc(memberId, memberId);
-
-        return chatRooms.stream()
-                .map(room -> {
-                    boolean isBuyer = room.getBuyerId().equals(memberId);
-                    Long opponentId = isBuyer ? room.getSellerId() : room.getBuyerId();
-
-                    // 상대방 닉네임 조회
-                    String opponentNickname = memberRepository.findById(opponentId)
-                            .map(Member::getNickname)
-                            .orElse("탈퇴한 회원");
-
-                    // 마지막 메시지 조회
-                    String lastMessage = chatMessageRepository
-                            .findByChatRoomIdOrderByIdDesc(room.getId(),
-                                    org.springframework.data.domain.PageRequest.of(0, 1))
-                            .stream()
-                            .findFirst()
-                            .map(msg -> msg.getContent())
-                            .orElse("");
-
-                    // 읽지 않은 메시지 수
-                    long unreadCount = chatMessageRepository
-                            .countByChatRoomIdAndSenderIdNotAndIsReadFalse(room.getId(), memberId);
-
-                    return new ChatRoomSummaryResponse(
-                            room.getId(),
-                            opponentId,
-                            opponentNickname,
-                            room.getProductId(),
-                            lastMessage,
-                            unreadCount
-                    );
-                })
-                .collect(Collectors.toList());
+        return chatRoomRepository.findMyChatRoomSummaries(memberId);
     }
 
     /**
