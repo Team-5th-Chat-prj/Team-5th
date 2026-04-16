@@ -45,6 +45,7 @@ public enum ErrorCode {
     REVIEW_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "R001", "거래 완료(SOLD) 상태에서만 리뷰를 작성할 수 있습니다."),
     REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "R002", "이미 작성한 리뷰가 있습니다."),
     REVIEW_FORBIDDEN(HttpStatus.FORBIDDEN, "R003", "해당 거래의 구매자만 리뷰를 작성할 수 있습니다."),
+    INVALID_RATING(HttpStatus.BAD_REQUEST, "R004", "평점은 0.5~5.0 사이의 0.5 단위만 가능합니다."),
 
     // ===== LIKE (L) =====
     LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "L001", "이미 찜한 상품입니다."),
