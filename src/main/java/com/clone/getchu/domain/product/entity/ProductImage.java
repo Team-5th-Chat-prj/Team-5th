@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_product_image_url",
-                        columnNames = {"imageUrl"}
+                        columnNames = {"product_id", "imageUrl"}
                 )
         }
 )

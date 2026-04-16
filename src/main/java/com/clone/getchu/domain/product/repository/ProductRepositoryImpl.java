@@ -27,7 +27,6 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         List<Product> content = queryFactory
                 .selectFrom(product)
                 .leftJoin(product.category).fetchJoin()
-                .leftJoin(product.images).fetchJoin()
                 .where(
                         combineCursorCondition(condition.cursor()),
                         eqCategoryId(condition.categoryId()),
@@ -35,7 +34,6 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                         eqStatus(condition.status()),
                         product.isDeleted.isFalse()
                 )
-                .distinct()
                 .orderBy(product.createdAt.desc(), product.id.desc())
                 .limit(pageable.getPageSize() + 1)
                 .fetch();
