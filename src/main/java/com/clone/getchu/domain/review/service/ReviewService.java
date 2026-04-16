@@ -1,5 +1,7 @@
 package com.clone.getchu.domain.review.service;
 
+import com.clone.getchu.domain.member.entity.Member;
+import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.domain.review.dto.request.ReviewRequest;
 import com.clone.getchu.domain.review.dto.response.ReviewResponse;
 import com.clone.getchu.domain.review.entity.Review;
@@ -25,13 +27,15 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final TradeRepository tradeRepository;
+    private final MemberRepository memberRepository;
 
     /**
      * 리뷰 작성
      * 1. 거래 완료(SOLD) 상태 검증
-     * 2. 구매자 본인(trade.member) 검증
+     * 2. 구매자 본인(trade.buyer) 검증
      * 3. 동일 거래 중복 리뷰 검증
      * 4. 리뷰 저장 + 판매자 평점 통계 업데이트 (단일 트랜잭션)
+     *    - 판매자 조회 시 비관적 락 적용: 동시 리뷰 작성으로 인한 Lost Update 방지
      */
     @Transactional
     public void createReview(CustomUserDetails userDetails, Long tradeId, ReviewRequest request) {
@@ -44,7 +48,7 @@ public class ReviewService {
         }
 
         // 해당 거래의 구매자(trade.buyer)만 리뷰 작성 가능
-        if (!trade.getBuyer().getId().equals(userDetails.getMemberId())) {
+        if (!trade.isBuyer(userDetails.getMemberId())) {
             throw new ForbiddenException(ErrorCode.REVIEW_FORBIDDEN);
         }
 
@@ -55,15 +59,17 @@ public class ReviewService {
 
         Review review = Review.create(
                 trade,
-                trade.getBuyer(),
-                trade.getSeller(),
+                trade.getBuyer(),   // reviewer = 구매자
+                trade.getSeller(),  // reviewee = 판매자
                 request.rating(),
                 request.content()
         );
         reviewRepository.save(review);
 
-        // 판매자 평점 통계 업데이트 (같은 트랜잭션 내 dirty checking으로 반영)
-        trade.getSeller().updateReviewStats(request.rating());
+        // 비관적 락으로 판매자를 다시 조회하여 동시 요청 간 Lost Update 방지
+        Member seller = memberRepository.findByIdWithLock(trade.getSeller().getId())
+                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+        seller.updateReviewStats(request.rating());
     }
 
     /**
@@ -71,7 +77,7 @@ public class ReviewService {
      * cursor: base64(reviewId) — null이면 첫 페이지
      */
     public CursorPageResponse<ReviewResponse> getReviews(Long memberId, String cursor, int size) {
-        Long cursorId = (cursor != null) ? Long.parseLong(CursorUtil.decodeCursor(cursor)) : null;
+        Long cursorId = decodeCursor(cursor);
 
         // size + 1개를 조회하여 다음 페이지 존재 여부 판단
         List<ReviewResponse> results = reviewRepository.findReviewsByRevieweeIdWithCursor(
@@ -85,5 +91,18 @@ public class ReviewService {
                 : null;
 
         return new CursorPageResponse<>(content, nextCursor, hasNext);
+    }
+
+    /**
+     * 커서 디코딩
+     * 잘못된 Base64 또는 숫자가 아닌 값이 들어오면 400으로 변환하여 500 방지
+     */
+    private Long decodeCursor(String cursor) {
+        if (cursor == null) return null;
+        try {
+            return Long.parseLong(CursorUtil.decodeCursor(cursor));
+        } catch (Exception e) {
+            throw new InvalidRequestException(ErrorCode.INVALID_CURSOR_FORMAT);
+        }
     }
 }

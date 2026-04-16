@@ -6,7 +6,7 @@ import com.clone.getchu.domain.member.dto.request.UpdatePasswordRequest;
 import com.clone.getchu.domain.member.dto.response.MemberProfileResponse;
 import com.clone.getchu.domain.member.dto.response.MemberResponse;
 import com.clone.getchu.domain.member.service.MemberService;
-import com.clone.getchu.global.security.*;
+import com.clone.getchu.global.security.CustomUserDetails;
 import com.clone.getchu.support.RestDocsSupport;
 import com.clone.getchu.support.WithMockCustomUser;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
@@ -15,12 +15,9 @@ import com.epages.restdocs.apispec.Schema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
@@ -43,30 +40,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(MemberController.class)
 class MemberControllerTest extends RestDocsSupport {
 
-    // ── Redis/Redisson: 실제 연결 없이 컨텍스트 로딩
-    @MockBean
-    private RedisConnectionFactory redisConnectionFactory;  // RedisConfig.redisTemplate() 의존성 해소
-    @MockBean
-    private StringRedisTemplate stringRedisTemplate;        // JwtAuthFilter 블랙리스트 체크
-    @MockBean
-    private RedissonClient redissonClient;                  // Redisson 자동 연결 차단
+    // Redis/Security 공통 MockBean은 RestDocsSupport에서 관리
 
     @MockBean
     MemberService memberService;
 
     @MockBean
     AuthService authService;
-
-    // SecurityConfig 생성자 의존성 — @WebMvcTest는 Filter가 아닌 @Component를 스캔하지 않음
-    @MockBean
-    private JwtAuthEntryPoint jwtAuthEntryPoint;
-    @MockBean
-    private JwtAccessDeniedHandler jwtAccessDeniedHandler;
-
-    // JwtAuthFilter 빈 생성에 필요 — @WebMvcTest는 JwtProvider(@Component)를 로드하지 않음
-    // mock이므로 resolveToken()은 null 반환 → 필터가 JWT 없음으로 판단 → chain.doFilter() 통과
-    @MockBean
-    private JwtProvider jwtProvider;
 
     @Autowired
     private ObjectMapper objectMapper;

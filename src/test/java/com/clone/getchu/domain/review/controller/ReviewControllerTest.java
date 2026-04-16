@@ -4,7 +4,6 @@ import com.clone.getchu.domain.review.dto.request.ReviewRequest;
 import com.clone.getchu.domain.review.dto.response.ReviewResponse;
 import com.clone.getchu.domain.review.service.ReviewService;
 import com.clone.getchu.global.common.CursorPageResponse;
-import com.clone.getchu.global.security.*;
 import com.clone.getchu.support.RestDocsSupport;
 import com.clone.getchu.support.WithMockCustomUser;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
@@ -13,12 +12,9 @@ import com.epages.restdocs.apispec.Schema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
@@ -41,24 +37,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(ReviewController.class)
 class ReviewControllerTest extends RestDocsSupport {
 
-    // ── Redis/Redisson: 실제 연결 없이 컨텍스트 로딩
-    @MockBean
-    private RedisConnectionFactory redisConnectionFactory;
-    @MockBean
-    private StringRedisTemplate stringRedisTemplate;
-    @MockBean
-    private RedissonClient redissonClient;
+    // Redis/Security 공통 MockBean은 RestDocsSupport에서 관리
 
     @MockBean
     private ReviewService reviewService;
-
-    // SecurityConfig 의존성 해소
-    @MockBean
-    private JwtAuthEntryPoint jwtAuthEntryPoint;
-    @MockBean
-    private JwtAccessDeniedHandler jwtAccessDeniedHandler;
-    @MockBean
-    private JwtProvider jwtProvider;
 
     @Autowired
     private ObjectMapper objectMapper;
