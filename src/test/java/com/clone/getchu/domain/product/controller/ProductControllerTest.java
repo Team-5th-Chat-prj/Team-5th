@@ -69,7 +69,17 @@ class ProductControllerTest {
         ProductCreateRequest request = new ProductCreateRequest(
                 "아이폰 15 팝니다", "거의 새거에요", 1000000, 1L, List.of("url1", "url2")
         );
-        ProductResponse response = new ProductResponse(1L, "아이폰 15 팝니다", ProductEnum.SALE);
+        ProductResponse response = new ProductResponse(
+                1L,
+                "아이폰 15 팝니다",
+                "거의 새거에요",
+                1000000,
+                ProductEnum.SALE,
+                "디지털기기",
+                "애플매니아",
+                List.of("url1", "url2"),
+                LocalDateTime.now()
+        );
 
         // @AuthenticationPrincipal이 null이므로 any()로 매칭 (null 포함)
         given(productService.createProduct(any(ProductCreateRequest.class), any()))
@@ -112,7 +122,17 @@ class ProductControllerTest {
     @DisplayName("상품 상세 조회 성공")
     void getProduct_Success() throws Exception {
         // given
-        ProductResponse response = new ProductResponse(1L, "상세 제목", ProductEnum.SALE);
+        ProductResponse response = new ProductResponse(
+                1L,
+                "상세 제목",
+                "상품 상세 설명입니다.",
+                15000,
+                ProductEnum.SALE,
+                "전자기기",
+                "판매자닉네임",
+                List.of("https://image1.com", "https://image2.com"),
+                LocalDateTime.now() // createdAt
+        );
         given(productService.getProduct(1L)).willReturn(response);
 
         // when & then
@@ -129,7 +149,17 @@ class ProductControllerTest {
         ProductUpdateRequest request = new ProductUpdateRequest(
                 "수정된 제목", null, 1200000, null, ProductEnum.RESERVED, null
         );
-        ProductResponse response = new ProductResponse(1L, "수정된 제목", ProductEnum.RESERVED);
+        ProductResponse response = new ProductResponse(
+                1L,
+                "수정된 제목",
+                "수정된 상세 설명입니다.",
+                1200000,
+                ProductEnum.RESERVED,
+                "디지털기기",
+                "판매자닉네임",
+                List.of("https://image.com/new.jpg"),
+                LocalDateTime.now()
+        );
 
         given(productService.updateProduct(anyLong(), any(ProductUpdateRequest.class), any()))
                 .willReturn(response);

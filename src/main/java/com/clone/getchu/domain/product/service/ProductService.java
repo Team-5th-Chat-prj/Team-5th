@@ -44,9 +44,7 @@ public class ProductService {
                 .status(ProductEnum.SALE)
                 .build();
 
-        if (request.imageUrls() != null) {
-            product.updateImages(request.imageUrls());
-        }
+        product.updateImages(request.imageUrls());
 
         productRepository.save(product);
         return ProductResponse.from(product);
@@ -54,10 +52,8 @@ public class ProductService {
 
     @Transactional
     public ProductResponse updateProduct(Long productId, ProductUpdateRequest request, Long memberId) {
-        // [수정] 삭제되지 않은 상품인지 먼저 확인
         Product product = findActiveProduct(productId);
 
-        // 본인 확인
         validateSeller(product, memberId);
 
         Category category = null;
@@ -79,7 +75,6 @@ public class ProductService {
     }
 
     public ProductResponse getProduct(Long productId) {
-        // [수정] 공통 메서드 사용
         Product product = findActiveProduct(productId);
         return ProductResponse.from(product);
     }

@@ -80,16 +80,27 @@ public class Product extends BaseEntity {
         if (price != null) this.price = price;
         if (status != null) this.status = status;
         if (category != null) this.category = category;
-        if (imageUrls != null && !imageUrls.isEmpty()) { // 의도치 않은 전체 삭제 방지
+        if (imageUrls != null) {
             this.images.clear();
             imageUrls.forEach(url -> this.images.add(new ProductImage(url, this)));
         }
     }
 
     public void updateImages(List<String> newUrls) {
-        if (newUrls == null) return;
+        // 1. null이면 "수정 의사가 없음"으로 판단하여 기존 상태 유지
+        if (newUrls == null) {
+            return;
+        }
+
+        // 2. null이 아니면 일단 기존 이미지를 모두 비움
+        // (빈 리스트([])가 들어오면 아래 루프를 타지 않으므로 '전체 삭제'가 됨)
         this.images.clear();
-        newUrls.forEach(url -> this.images.add(new ProductImage(url, this)));
+
+        // 3. 새 URL이 있다면 추가
+        newUrls.forEach(url -> {
+            ProductImage productImage = new ProductImage(url, this);
+            this.images.add(productImage);
+        });
     }
 
     public void incrementLikeCount() {
