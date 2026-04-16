@@ -17,10 +17,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-    defer-datasource-initialization: true  # data.sql이 JPA 테이블 생성 후 실행되도록
-  sql:
-    init:
-      mode: always  # data.sql 항상 실행
   data:
     redis:
       host: ${REDIS_HOST}
