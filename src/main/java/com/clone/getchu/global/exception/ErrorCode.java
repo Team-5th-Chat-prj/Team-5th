@@ -20,7 +20,8 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "존재하지 않는 회원입니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "M002", "현재 비밀번호가 올바르지 않습니다."),
     SAME_AS_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "M003", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
-
+    // ===== CATEGORY (C) =====
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "C001", "존재하지 않는 카테고리입니다."),
     // ===== PRODUCT (P) =====
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "존재하지 않는 상품입니다."),
     PRODUCT_FORBIDDEN(HttpStatus.FORBIDDEN, "P002", "본인의 상품만 수정/삭제할 수 있습니다."),
@@ -53,8 +54,8 @@ public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "G001", "입력값이 올바르지 않습니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "G002", "요청한 리소스를 찾을 수 없습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "G003", "접근 권한이 없습니다."),
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "G004", "서버 오류가 발생했습니다.");
-
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "G004", "서버 오류가 발생했습니다."),
+    INVALID_CURSOR_FORMAT(HttpStatus.BAD_REQUEST, "G005", "커서 형식이 올바르지 않습니다.");
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;

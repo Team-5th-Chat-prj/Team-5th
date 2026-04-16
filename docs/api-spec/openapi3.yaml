@@ -1,0 +1,310 @@
+openapi: 3.0.1
+info:
+  title: Getchu API
+  description: Getchu 프로젝트 API 명세서
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+tags: []
+paths:
+  /members/me:
+    get:
+      tags:
+      - Member
+      summary: 내 정보 조회
+      description: 내 정보 조회
+      operationId: member-get-me
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+              examples:
+                member-get-me:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"id\" : 1,\r\n \
+                    \   \"email\" : \"test@email.com\",\r\n    \"nickname\" : \"테스\
+                    트유저\",\r\n    \"profileImageUrl\" : \"https://example.com/profile.jpg\"\
+                    ,\r\n    \"averageRating\" : 4.5,\r\n    \"reviewCount\" : 10,\r\
+                    \n    \"createdAt\" : \"2026-04-15T19:17:18.975205\"\r\n  }\r\n\
+                    }"
+    delete:
+      tags:
+      - Member
+      summary: 회원 탈퇴
+      description: 로그인한 회원 계정을 삭제합니다.
+      operationId: member/delete-member
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteMemberResponse'
+              examples:
+                member/delete-member:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"회원탈퇴\
+                    가 완료되었습니다.\"\r\n}"
+    patch:
+      tags:
+      - Member
+      summary: 내 정보 수정
+      description: |-
+        닉네임 또는 프로필 이미지 URL을 수정합니다.
+        변경하지 않을 필드는 null로, 프로필 이미지를 삭제하려면 빈 문자열("")로 전송합니다.
+      operationId: member/update-member
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+            examples:
+              member/update-member:
+                value: "{\r\n  \"nickname\" : \"새닉네임\",\r\n  \"profileImageUrl\" :\
+                  \ \"https://cdn.example.com/new.jpg\"\r\n}"
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+              examples:
+                member/update-member:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"id\" : 1,\r\n \
+                    \   \"email\" : \"test@test.com\",\r\n    \"nickname\" : \"새닉네\
+                    임\",\r\n    \"profileImageUrl\" : \"https://cdn.example.com/new.jpg\"\
+                    ,\r\n    \"averageRating\" : 4.5,\r\n    \"reviewCount\" : 12,\r\
+                    \n    \"createdAt\" : \"2024-01-01T00:00:00\"\r\n  }\r\n}"
+  /members/{memberId}:
+    get:
+      tags:
+      - Member
+      summary: 타 회원 프로필 조회
+      description: 비로그인 상태에서도 조회 가능한 타 회원의 공개 프로필 정보를 조회합니다.
+      operationId: member/get-member-profile
+      parameters:
+      - name: memberId
+        in: path
+        description: 조회할 회원 ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberProfileResponse'
+              examples:
+                member/get-member-profile:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"id\" : 2,\r\n \
+                    \   \"nickname\" : \"상대방닉네임\",\r\n    \"profileImageUrl\" : \"\
+                    https://cdn.example.com/other.jpg\",\r\n    \"averageRating\"\
+                    \ : 4.2,\r\n    \"reviewCount\" : 7,\r\n    \"createdAt\" : \"\
+                    2024-03-15T00:00:00\"\r\n  }\r\n}"
+  /members/me/password:
+    patch:
+      tags:
+      - Member
+      summary: 비밀번호 변경
+      description: |-
+        현재 비밀번호를 확인한 후 새 비밀번호로 변경합니다.
+        새 비밀번호는 영문·숫자·특수문자를 각각 1자 이상 포함해야 합니다.
+      operationId: member/update-password
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+            examples:
+              member/update-password:
+                value: "{\r\n  \"oldPassword\" : \"OldPass1!\",\r\n  \"newPassword\"\
+                  \ : \"NewPass2@\"\r\n}"
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePasswordResponse'
+              examples:
+                member/update-password:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"비밀번호\
+                    가 변경되었습니다.\"\r\n}"
+components:
+  schemas:
+    DeleteMemberResponse:
+      title: DeleteMemberResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        message:
+          type: string
+          description: '"회원탈퇴가 완료되었습니다."'
+    MemberProfileResponse:
+      title: MemberProfileResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        data:
+          required:
+          - averageRating
+          - createdAt
+          - id
+          - nickname
+          - reviewCount
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 가입 일시
+            reviewCount:
+              type: number
+              description: 리뷰 수
+            averageRating:
+              type: number
+              description: 평균 평점
+            nickname:
+              type: string
+              description: 닉네임
+            id:
+              type: number
+              description: 회원 ID
+            profileImageUrl:
+              type: string
+              description: 프로필 이미지 URL (없으면 null)
+              nullable: true
+        message:
+          type: string
+          description: 응답 메시지
+    UpdatePasswordRequest:
+      title: UpdatePasswordRequest
+      required:
+      - newPassword
+      - oldPassword
+      type: object
+      properties:
+        oldPassword:
+          type: string
+          description: 현재 비밀번호
+        newPassword:
+          type: string
+          description: "새 비밀번호 (8자 이상, 영문·숫자·특수문자 각 1자 이상 포함)"
+    MemberResponse:
+      title: MemberResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드
+        data:
+          required:
+          - averageRating
+          - createdAt
+          - email
+          - id
+          - nickname
+          - reviewCount
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 가입 일시
+            reviewCount:
+              type: number
+              description: 리뷰 수
+            averageRating:
+              type: number
+              description: 평균 평점
+            nickname:
+              type: string
+              description: 닉네임
+            id:
+              type: number
+              description: 회원 ID
+            profileImageUrl:
+              type: string
+              description: 프로필 이미지 URL
+              nullable: true
+            email:
+              type: string
+              description: 이메일
+        message:
+          type: string
+          description: 응답 메시지
+    UpdatePasswordResponse:
+      title: UpdatePasswordResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        message:
+          type: string
+          description: '"비밀번호가 변경되었습니다."'
+    MemberUpdateRequest:
+      title: MemberUpdateRequest
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 변경할 닉네임 (2~20자). null 전송 시 변경 없음
+          nullable: true
+        profileImageUrl:
+          type: string
+          description: "변경할 프로필 이미지 URL. \"\" 전송 시 이미지 삭제, null 전송 시 변경 없음"
+          nullable: true
