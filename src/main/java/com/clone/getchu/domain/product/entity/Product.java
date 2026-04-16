@@ -83,6 +83,12 @@ public class Product extends BaseEntity {
         updateImages(imageUrls);
     }
 
+    public void updateStatus(ProductEnum status) {
+        if (status != null) {
+            this.status = status;
+        }
+    }
+
     public void updateImages(List<String> newUrls) {
         // 1. null이면 "수정 의사가 없음"으로 판단하여 기존 상태 유지
         if (newUrls == null) {

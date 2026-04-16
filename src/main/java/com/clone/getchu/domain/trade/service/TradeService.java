@@ -54,7 +54,7 @@ public class TradeService {
         Member seller = product.getSeller();
 
         //상품 상태 변경
-        product.updateProduct(null, null, null, ProductEnum.RESERVED, null, null);
+        product.updateStatus(ProductEnum.RESERVED);
 
         Trade trade = Trade.builder()
                 .product(product)
@@ -78,7 +78,7 @@ public class TradeService {
 
         if(targetStatus == TradeStatus.SALE){
             trade.cancel();
-            trade.getProduct().updateProduct(null, null, null, ProductEnum.SALE, null, null);
+            trade.getProduct().updateStatus(ProductEnum.SALE);
         } else {
             // "진행" 흐름: SALE -> RESERVED -> TRADING -> SOLD 순차 진행
             validateTransition(trade.getStatus(), targetStatus);
