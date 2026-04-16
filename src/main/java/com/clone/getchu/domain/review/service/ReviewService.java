@@ -43,8 +43,8 @@ public class ReviewService {
             throw new InvalidRequestException(ErrorCode.REVIEW_NOT_ALLOWED);
         }
 
-        // 해당 거래의 구매자(trade.member)만 리뷰 작성 가능
-        if (!trade.getMember().getId().equals(userDetails.getMemberId())) {
+        // 해당 거래의 구매자(trade.buyer)만 리뷰 작성 가능
+        if (!trade.getBuyer().getId().equals(userDetails.getMemberId())) {
             throw new ForbiddenException(ErrorCode.REVIEW_FORBIDDEN);
         }
 
@@ -55,15 +55,15 @@ public class ReviewService {
 
         Review review = Review.create(
                 trade,
-                trade.getMember(), // reviewer = 구매자
-                trade.getProduct().getSeller(), // reviewee = 판매자
+                trade.getBuyer(),
+                trade.getSeller(),
                 request.rating(),
                 request.content()
         );
         reviewRepository.save(review);
 
         // 판매자 평점 통계 업데이트 (같은 트랜잭션 내 dirty checking으로 반영)
-        trade.getProduct().getSeller().updateReviewStats(request.rating());
+        trade.getSeller().updateReviewStats(request.rating());
     }
 
     /**
