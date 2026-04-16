@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: getchu
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    defer-datasource-initialization: true  # data.sql이 JPA 테이블 생성 후 실행되도록
+  sql:
+    init:
+      mode: always  # data.sql 항상 실행
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  access-expiration-time: ${JWT_ACCESS_EXPIRATION_TIME:900000}      # 15분
+  refresh-expiration-time: ${JWT_REFRESH_EXPIRATION_TIME:604800000} # 7일
