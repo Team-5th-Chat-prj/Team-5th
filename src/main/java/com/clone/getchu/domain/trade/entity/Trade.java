@@ -44,6 +44,14 @@ public class Trade extends BaseEntity {
     private LocalDateTime tradedAt;
     private LocalDateTime soldAt;
 
+    @Builder
+    private Trade(Product product, Member buyer, Member seller, TradeStatus status) {
+        this.product = product;
+        this.buyer = buyer;
+        this.seller = seller;
+        this.status = status;
+    }
+
     //전이: SALE → RESERVED, RESERVED → TRADING, TRADING → SOLD
     public void proceed() {
         this.status = this.status.next();
