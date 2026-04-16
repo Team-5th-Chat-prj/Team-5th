@@ -7,7 +7,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "PRODUCT_IMAGE")
+@Table(
+        name = "PRODUCT_IMAGE",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_product_image_url",
+                        columnNames = {"imageUrl"}
+                )
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductImage extends BaseEntity {

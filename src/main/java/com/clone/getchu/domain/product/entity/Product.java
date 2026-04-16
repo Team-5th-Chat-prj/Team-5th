@@ -80,10 +80,7 @@ public class Product extends BaseEntity {
         if (price != null) this.price = price;
         if (status != null) this.status = status;
         if (category != null) this.category = category;
-        if (imageUrls != null) {
-            this.images.clear();
-            imageUrls.forEach(url -> this.images.add(new ProductImage(url, this)));
-        }
+        updateImages(imageUrls);
     }
 
     public void updateImages(List<String> newUrls) {
@@ -94,10 +91,13 @@ public class Product extends BaseEntity {
 
         // 2. null이 아니면 일단 기존 이미지를 모두 비움
         // (빈 리스트([])가 들어오면 아래 루프를 타지 않으므로 '전체 삭제'가 됨)
+        List<String> distinctUrls = newUrls.stream()
+                .distinct()
+                .toList();
         this.images.clear();
 
         // 3. 새 URL이 있다면 추가
-        newUrls.forEach(url -> {
+        distinctUrls.forEach(url -> {
             ProductImage productImage = new ProductImage(url, this);
             this.images.add(productImage);
         });
