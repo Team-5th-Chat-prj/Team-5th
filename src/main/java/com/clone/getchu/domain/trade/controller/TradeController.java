@@ -23,16 +23,14 @@ public class TradeController {
     private final TradeService tradeService;
 
     //상품 예약 요청
-    @PostMapping("/products/{productId}/reserve/{buyerId}")
+    @PostMapping("/products/{productId}/reserve")
     public ResponseEntity<ApiResponse<TradeReserveResponse>> reserveProduct(
             @PathVariable Long productId,
-            @PathVariable Long buyerId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         TradeReserveResponse response = tradeService.reserveProduct(
                 productId,
-                buyerId,
-                userDetails.getMemberId()); //현재 로그인 한 사람이 판매자
+                userDetails.getMemberId()); //현재 로그인 한 사람이 구매자
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

@@ -33,30 +33,25 @@ public class TradeService {
     /**
      * 상품 예약 요청 (SALE → RESERVED)
      * 1. 상품 존재 확인
-     * 2. 구매자가 판매자 본인이 아닌지 확인
-     * 3. 상품 상태 전이(proceed) — 내부적으로 TradeStatus.SALE.next() 호출
+     * 2. 구매자가 상품 판매자 본인이 아닌지 확인
+     * 3. 상품 상태 변경
      * 4. Trade 생성 저장
      */
     @Transactional
-    public TradeReserveResponse reserveProduct(Long productId, Long buyerId, Long sellerId) {
+    public TradeReserveResponse reserveProduct(Long productId, Long buyerId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        //상품 소유자 확인
-        if(!product.getSeller().getId().equals(sellerId)){
-            throw new ForbiddenException(ErrorCode.TRADE_FORBIDDEN);
+        //본인 상품 예약 방지 검증
+        if (product.getSeller().getId().equals(buyerId)) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
         }
 
         Member buyer = memberRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
 
-        Member seller = memberRepository.findById(sellerId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
-
-        //본인 상품 구매 방지 검증
-        if (product.getSeller().getId().equals(buyerId)) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST);
-        }
+        //상품 등록자 추출 (판매자)
+        Member seller = product.getSeller();
 
         //상품 상태 변경
         product.updateProduct(null, null, null, ProductEnum.RESERVED, null, null);
