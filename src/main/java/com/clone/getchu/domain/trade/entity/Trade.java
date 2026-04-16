@@ -1,6 +1,8 @@
 package com.clone.getchu.domain.trade.entity;
 
 import com.clone.getchu.domain.product.entity.Product;
+import com.clone.getchu.domain.product.entity.ProductEnum;
+import com.clone.getchu.domain.trade.enums.TradeRole;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.global.common.BaseEntity;
@@ -53,14 +55,18 @@ public class Trade extends BaseEntity {
     }
 
     //전이: SALE → RESERVED, RESERVED → TRADING, TRADING → SOLD
-    public void proceed() {
-        this.status = this.status.next();
+    public void proceed(TradeRole role) {
+        this.status = this.status.next(role);
         recordTimestamp(this.status);
+
+        //Trade 상태에 맞춰 상품 상태도 자동 동기화
+        if (this.status == TradeStatus.RESERVED) product.updateStatus(ProductEnum.RESERVED);
+        if(this.status == TradeStatus.SOLD) product.updateStatus(ProductEnum.SOLD_OUT);
     }
 
     //취소: RESERVED → SALE, TRADING → SALE
-    public void cancel() {
-        this.status = this.status.cancel();
+    public void cancel(TradeRole role) {
+        this.status = this.status.cancel(role);
         clearTimestamps(); //취소시 기록 시간 초기화
     }
 

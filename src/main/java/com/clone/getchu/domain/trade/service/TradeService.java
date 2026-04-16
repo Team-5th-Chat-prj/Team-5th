@@ -76,19 +76,21 @@ public class TradeService {
         //거래의 당사자가 맞는지 검증
         trade.validateParticipant(memberId);
 
+        TradeRole role = trade.isSeller(memberId) ? TradeRole.SELLER : TradeRole.BUYER;
+
         if(targetStatus == TradeStatus.SALE){
-            trade.cancel();
+            trade.cancel(role);
             trade.getProduct().updateStatus(ProductEnum.SALE);
         } else {
             // "진행" 흐름: SALE -> RESERVED -> TRADING -> SOLD 순차 진행
-            validateTransition(trade.getStatus(), targetStatus);
-            trade.proceed();
+            validateTransition(trade.getStatus(), targetStatus, role);
+            trade.proceed(role);
         }
 
     }
     //상태 전이 검증
-    private void validateTransition(TradeStatus currentStatus, TradeStatus targetStatus){
-        if (currentStatus.next() != targetStatus){
+    private void validateTransition(TradeStatus currentStatus, TradeStatus targetStatus, TradeRole role){
+        if (currentStatus.next(role) != targetStatus){
             throw new BusinessException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
     }
