@@ -7,6 +7,7 @@ import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
 import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
 import com.clone.getchu.domain.trade.entity.Trade;
+import com.clone.getchu.domain.trade.enums.TradeRole;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.trade.repository.TradeRepository;
 import com.clone.getchu.domain.member.entity.Member;
@@ -111,12 +112,12 @@ public class TradeService {
 
     //거래 목록 조회
     @Transactional(readOnly = true)
-    public List<GetAllTradeResponse> getMyTrade(Long memberId, String role){
+    public List<GetAllTradeResponse> getMyTrade(Long memberId, TradeRole role){
         List<Trade> trades;
 
-        if("selling".equals(role)){
+        if(role == TradeRole.SELLER){
             trades = tradeRepository.findAllBySellerIdOrderByCreatedAtDesc(memberId);
-        } else if ("buying".equals(role)) {
+        } else if (role == TradeRole.BUYER) {
             trades = tradeRepository.findAllByBuyerIdOrderByCreatedAtDesc(memberId);
         } else {
             throw new BusinessException(ErrorCode.INVALID_REQUEST);

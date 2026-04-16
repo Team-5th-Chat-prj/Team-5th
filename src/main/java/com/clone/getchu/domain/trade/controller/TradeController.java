@@ -4,6 +4,7 @@ import com.clone.getchu.domain.trade.dto.request.TradeStatusUpdateRequest;
 import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
 import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
+import com.clone.getchu.domain.trade.enums.TradeRole;
 import com.clone.getchu.domain.trade.service.TradeService;
 import com.clone.getchu.global.common.ApiResponse;
 import com.clone.getchu.global.security.CustomUserDetails;
@@ -61,7 +62,7 @@ public class TradeController {
     //자신의 거래 리스트 조회
     @GetMapping("/members/me/trades")
     public ResponseEntity<ApiResponse<List<GetAllTradeResponse>>> getMyTrades(
-            @RequestParam(name = "role") String role,
+            @RequestParam(name = "role") TradeRole role,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ){
         List<GetAllTradeResponse> responses = tradeService.getMyTrade(userDetails.getMemberId(), role);
