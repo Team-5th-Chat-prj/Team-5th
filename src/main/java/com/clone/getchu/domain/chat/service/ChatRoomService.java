@@ -44,13 +44,17 @@ public class ChatRoomService {
         }
 
         // 이미 존재하는 채팅방 확인 (멱등)
-        Optional<ChatRoom> existingRoom = chatRoomRepository.findByBuyerIdAndProductId(buyerId, request.getProductId());
+        Optional<ChatRoom> existingRoom = chatRoomRepository.findByBuyerIdAndProductId(buyerId, request.productId());
         if (existingRoom.isPresent()) {
             return new ChatRoomResponse(existingRoom.get().getId(), false);
         }
 
         // 새 채팅방 생성
-        ChatRoom chatRoom = ChatRoom.create(request.getProductId(), buyerId, sellerId);
+        ChatRoom chatRoom = ChatRoom.builder()
+                .productId(request.productId())
+                .buyerId(buyerId)
+                .sellerId(sellerId)
+                .build();
         chatRoomRepository.save(chatRoom);
         return new ChatRoomResponse(chatRoom.getId(), true);
     }

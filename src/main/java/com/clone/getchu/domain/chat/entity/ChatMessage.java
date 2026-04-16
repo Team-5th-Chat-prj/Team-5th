@@ -3,6 +3,7 @@ package com.clone.getchu.domain.chat.entity;
 import com.clone.getchu.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -34,14 +35,12 @@ public class ChatMessage extends BaseEntity {
     @Column(name = "is_read", nullable = false)
     private boolean isRead = false;
 
-    // 정적 팩토리 메서드
-    public static ChatMessage create(Long chatRoomId, Long senderId, String senderNickname, String content) {
-        ChatMessage message = new ChatMessage();
-        message.chatRoomId = chatRoomId;
-        message.senderId = senderId;
-        message.senderNickname = senderNickname;
-        message.content = content;
-        message.isRead = false;
-        return message;
+    @Builder
+    private ChatMessage(Long chatRoomId, Long senderId, String senderNickname, String content) {
+        this.chatRoomId = chatRoomId;
+        this.senderId = senderId;
+        this.senderNickname = senderNickname;
+        this.content = content;
+        this.isRead = false;
     }
 }

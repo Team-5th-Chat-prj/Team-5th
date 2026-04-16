@@ -3,6 +3,7 @@ package com.clone.getchu.domain.chat.entity;
 import com.clone.getchu.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -38,13 +39,11 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
-    // 정적 팩토리 메서드
-    public static ChatRoom create(Long productId, Long buyerId, Long sellerId) {
-        ChatRoom chatRoom = new ChatRoom();
-        chatRoom.productId = productId;
-        chatRoom.buyerId = buyerId;
-        chatRoom.sellerId = sellerId;
-        return chatRoom;
+    @Builder
+    private ChatRoom(Long productId, Long buyerId, Long sellerId) {
+        this.productId = productId;
+        this.buyerId = buyerId;
+        this.sellerId = sellerId;
     }
 
     public void updateLastMessageAt(LocalDateTime lastMessageAt) {
