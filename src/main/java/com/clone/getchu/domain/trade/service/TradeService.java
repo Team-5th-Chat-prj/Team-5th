@@ -1,9 +1,11 @@
 package com.clone.getchu.domain.trade.service;
 
 import com.clone.getchu.domain.product.entity.Product;
+import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.repository.ProductRepository;
 import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
+import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
 import com.clone.getchu.domain.trade.entity.Trade;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.trade.repository.TradeRepository;
@@ -23,7 +25,7 @@ import java.util.List;
 public class TradeService {
 
     private final TradeRepository tradeRepository;
-    //private final ProductRepository productRepository;
+    private final ProductRepository productRepository;
     private final MemberRepository memberRepository;
 
     /**
@@ -33,29 +35,36 @@ public class TradeService {
      * 3. 상품 상태 전이(proceed) — 내부적으로 TradeStatus.SALE.next() 호출
      * 4. Trade 생성 저장
      */
-//    @Transactional
-//    public void reserveProduct(Long productId, Long buyerId) {
-//        Product product = productRepository.findById(productId)
-//                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
-//
-//        if (product.getSeller().getId().equals(buyerId)) {
-//            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
-//        }
-//
-//        Member member = memberRepository.findById(buyerId)
-//                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
-//
-//        // SALE → RESERVED: Product 상태 전이 (Enum에 위임)
-//        product.proceed();
-//
-//        Trade trade = Trade.builder()
-//                .product(product)
-//                .member(member)
-//                .status(TradeStatus.RESERVED)
-//                .build();
-//
-//        tradeRepository.save(trade);
-//    }
+    @Transactional
+    public TradeReserveResponse reserveProduct(Long productId, Long buyerId, Long sellerId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        Member buyer = memberRepository.findById(buyerId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Member seller = memberRepository.findById(sellerId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+
+        //본인 상품 구매 방지 검증
+        if (product.getSeller().getId().equals(buyerId)) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        //상품 상태 변경
+        product.updateProduct(null, null, null, ProductEnum.RESERVED, null, null);
+
+        Trade trade = Trade.builder()
+                .product(product)
+                .buyer(buyer)
+                .seller(seller)
+                .status(TradeStatus.RESERVED)
+                .build();
+
+        Trade savedTrade = tradeRepository.save(trade);
+
+        return TradeReserveResponse.from(savedTrade);
+    }
 
     @Transactional
     public void updateTradeStatus(Long tradeId, TradeStatus targetStatus, Long memberId){

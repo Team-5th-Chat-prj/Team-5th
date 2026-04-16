@@ -3,6 +3,7 @@ package com.clone.getchu.domain.trade.controller;
 import com.clone.getchu.domain.trade.dto.request.TradeStatusUpdateRequest;
 import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
+import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
 import com.clone.getchu.domain.trade.service.TradeService;
 import com.clone.getchu.global.common.ApiResponse;
 import com.clone.getchu.global.security.CustomUserDetails;
@@ -20,16 +21,22 @@ public class TradeController {
 
     private final TradeService tradeService;
 
-    // 상품 예약 요청
-//    @PostMapping("/products/{productId}/reserve")
-//    public ResponseEntity<ApiResponse<Void>> reserveProduct(
-//            @PathVariable Long productId,
-//            @AuthenticationPrincipal CustomUserDetails userDetails) {
-//        tradeService.reserveProduct(productId, userDetails.getMemberId());
-//        return ResponseEntity.ok(ApiResponse.success());
-//    }
+    //상품 예약 요청
+    @PostMapping("/products/{productId}/reserve/{buyerId}")
+    public ResponseEntity<ApiResponse<TradeReserveResponse>> reserveProduct(
+            @PathVariable Long productId,
+            @PathVariable Long buyerId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        TradeReserveResponse response = tradeService.reserveProduct(
+                productId,
+                buyerId,
+                userDetails.getMemberId()); //현재 로그인 한 사람이 판매자
 
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
+    //거래 상태 변경
     @PatchMapping("/trades/{tradeId}/status")
     public ResponseEntity<ApiResponse<Void>> changeTradeStatus(
             @PathVariable Long tradeId,
