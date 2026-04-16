@@ -20,7 +20,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("SELECT new com.clone.getchu.domain.chat.dto.response.ChatRoomSummaryResponse(" +
            "cr.id, CASE WHEN cr.buyerId = :memberId THEN cr.sellerId ELSE cr.buyerId END, " +
            "COALESCE(m.nickname, '탈퇴한 회원'), cr.productId, " +
-           "(SELECT cm.content FROM ChatMessage cm WHERE cm.chatRoomId = cr.id ORDER BY cm.id DESC LIMIT 1), " +
+           "(SELECT cm.content FROM ChatMessage cm WHERE cm.id = (SELECT MAX(cm2.id) FROM ChatMessage cm2 WHERE cm2.chatRoomId = cr.id)), " +
            "(SELECT COUNT(cm2) FROM ChatMessage cm2 WHERE cm2.chatRoomId = cr.id AND cm2.senderId <> :memberId AND cm2.isRead = false)" +
            ") " +
            "FROM ChatRoom cr " +
