@@ -6,6 +6,8 @@ import com.clone.getchu.global.common.ApiResponse;
 import com.clone.getchu.global.common.CursorPageResponse;
 import com.clone.getchu.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -36,7 +38,7 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<CursorPageResponse<ProductListResponse>>> getProducts(
             ProductSearchCondition cond,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @Min(1) @Max(100)@PageableDefault(size = 20) Pageable pageable) {
 
         return ResponseEntity.ok(ApiResponse.success(productService.searchProducts(cond, pageable)));
     }
