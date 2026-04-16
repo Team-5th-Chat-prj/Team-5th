@@ -1,8 +1,10 @@
 package com.clone.getchu.domain.product.controller;
 
 import com.clone.getchu.domain.product.dto.*;
+import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.service.ProductService;
 import com.clone.getchu.global.common.CursorPageResponse;
+import com.clone.getchu.global.security.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +18,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -51,6 +56,10 @@ class ProductControllerTest {
 
     @BeforeEach
     void setUp() {
+        CustomUserDetails mockUser = new CustomUserDetails(1L, "test@test.com", "password", "USER");
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(mockUser, null, mockUser.getAuthorities()));
+        SecurityContextHolder.setContext(context);
     }
 
     @Test
@@ -60,7 +69,7 @@ class ProductControllerTest {
         ProductCreateRequest request = new ProductCreateRequest(
                 "아이폰 15 팝니다", "거의 새거에요", 1000000, 1L, List.of("url1", "url2")
         );
-        ProductResponse response = new ProductResponse(1L, "아이폰 15 팝니다", "SALE");
+        ProductResponse response = new ProductResponse(1L, "아이폰 15 팝니다", ProductEnum.SALE);
 
         // @AuthenticationPrincipal이 null이므로 any()로 매칭 (null 포함)
         given(productService.createProduct(any(ProductCreateRequest.class), any()))
@@ -81,7 +90,7 @@ class ProductControllerTest {
     void getProducts_Success() throws Exception {
         // given
         ProductListResponse listResponse = new ProductListResponse(
-                1L, "제목", 10000, "SALE", "thumb.jpg", LocalDateTime.now()
+                1L, "제목", 10000, ProductEnum.SALE, "thumb.jpg", LocalDateTime.now()
         );
         CursorPageResponse<ProductListResponse> pageResponse = new CursorPageResponse<>(
                 List.of(listResponse), "next-cursor-123", false
@@ -103,7 +112,7 @@ class ProductControllerTest {
     @DisplayName("상품 상세 조회 성공")
     void getProduct_Success() throws Exception {
         // given
-        ProductResponse response = new ProductResponse(1L, "상세 제목", "SALE");
+        ProductResponse response = new ProductResponse(1L, "상세 제목", ProductEnum.SALE);
         given(productService.getProduct(1L)).willReturn(response);
 
         // when & then
@@ -118,9 +127,9 @@ class ProductControllerTest {
     void updateProduct_Success() throws Exception {
         // given
         ProductUpdateRequest request = new ProductUpdateRequest(
-                "수정된 제목", null, 1200000, null, "RESERVED", null
+                "수정된 제목", null, 1200000, null, ProductEnum.RESERVED, null
         );
-        ProductResponse response = new ProductResponse(1L, "수정된 제목", "RESERVED");
+        ProductResponse response = new ProductResponse(1L, "수정된 제목", ProductEnum.RESERVED);
 
         given(productService.updateProduct(anyLong(), any(ProductUpdateRequest.class), any()))
                 .willReturn(response);
@@ -131,7 +140,7 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
-                .andExpect(jsonPath("$.data.status").value("RESERVED"));
+                .andExpect(jsonPath("$.data.status").value(ProductEnum.RESERVED.name()));
     }
 
     @Test

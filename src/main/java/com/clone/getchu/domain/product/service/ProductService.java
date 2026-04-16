@@ -6,6 +6,7 @@ import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.domain.product.dto.*;
 import com.clone.getchu.domain.product.entity.Product;
+import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.repository.ProductRepository;
 import com.clone.getchu.global.common.CursorPageResponse;
 import com.clone.getchu.global.exception.BusinessException;
@@ -40,7 +41,7 @@ public class ProductService {
                 .title(request.title())
                 .description(request.description())
                 .price(request.price())
-                .status("SALE")
+                .status(ProductEnum.SALE)
                 .build();
 
         if (request.imageUrls() != null) {
@@ -110,7 +111,7 @@ public class ProductService {
     // --- Helper Methods ---
 
     private Product findActiveProduct(Long productId) {
-        return productRepository.findById(productId)
+        return productRepository.findDetailById(productId)
                 .filter(p -> !p.getIsDeleted())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
     }

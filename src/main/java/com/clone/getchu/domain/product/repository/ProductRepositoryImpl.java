@@ -2,6 +2,7 @@ package com.clone.getchu.domain.product.repository;
 
 import com.clone.getchu.domain.product.dto.ProductSearchCondition;
 import com.clone.getchu.domain.product.entity.Product;
+import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.global.common.CursorPageResponse;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -53,8 +54,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return categoryId != null ? product.category.id.eq(categoryId) : null;
     }
 
-    private BooleanExpression eqStatus(String status) {
-        return (status != null && !status.isBlank()) ? product.status.eq(status) : product.status.eq("SALE");
+    private BooleanExpression eqStatus(ProductEnum status) {
+        return status != null ? product.status.eq(status) : null;
     }
 
     // 무한 스크롤(Slice) 처리를 위한 유틸 메서드

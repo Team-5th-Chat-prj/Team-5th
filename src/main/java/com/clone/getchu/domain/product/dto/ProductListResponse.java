@@ -1,6 +1,7 @@
 package com.clone.getchu.domain.product.dto;
 
 import com.clone.getchu.domain.product.entity.Product;
+import com.clone.getchu.domain.product.entity.ProductEnum;
 
 import java.time.LocalDateTime;
 
@@ -8,7 +9,7 @@ public record ProductListResponse(
         Long id,
         String title,
         Integer price,
-        String status,
+        ProductEnum status,
         String thumbnailUrl,
         LocalDateTime createdAt
 ) {

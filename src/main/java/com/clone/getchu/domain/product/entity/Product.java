@@ -46,7 +46,8 @@ public class Product extends BaseEntity {
     private Integer price;
 
     @Column(nullable = false, length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private ProductEnum status;
 
     @Column(name = "like_count")
     @ColumnDefault("0")
@@ -61,7 +62,7 @@ public class Product extends BaseEntity {
     // --- Builder 패턴 ---
     @Builder
     public Product(Member seller, Category category, String title, String description,
-                   Integer price, String status, Integer likeCount, Boolean isDeleted) {
+                   Integer price, ProductEnum status, Integer likeCount, Boolean isDeleted) {
         this.seller = seller;
         this.category = category;
         this.title = title;
@@ -73,13 +74,13 @@ public class Product extends BaseEntity {
     }
 
     // --- 비즈니스 로직 ---
-    public void updateProduct(String title, String description, Integer price, String status, Category category, List<String> imageUrls) {
+    public void updateProduct(String title, String description, Integer price, ProductEnum status, Category category, List<String> imageUrls) {
         if (title != null) this.title = title;
         if (description != null) this.description = description;
         if (price != null) this.price = price;
         if (status != null) this.status = status;
         if (category != null) this.category = category;
-        if (imageUrls != null) {
+        if (imageUrls != null && !imageUrls.isEmpty()) { // 의도치 않은 전체 삭제 방지
             this.images.clear();
             imageUrls.forEach(url -> this.images.add(new ProductImage(url, this)));
         }

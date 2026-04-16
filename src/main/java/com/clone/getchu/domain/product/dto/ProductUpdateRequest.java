@@ -1,5 +1,6 @@
 package com.clone.getchu.domain.product.dto;
 
+import com.clone.getchu.domain.product.entity.ProductEnum;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
@@ -12,6 +13,6 @@ public record ProductUpdateRequest(
         @Min(100)
         Integer price,
         Long categoryId,
-        String status,
+        ProductEnum status,
         List<String> imageUrls // 미전달 시 유지, 전달 시 전체 교체
 ) {}
