@@ -33,13 +33,17 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "reviewee_id", nullable = false)
     private Member reviewee; // 리뷰 받는 회원
 
-    @Column(nullable = false, precision = 3, scale = 1)
+    @Column(nullable = false, precision = 2, scale = 1)
     private BigDecimal rating;
 
     @Column(nullable = false, length = 500)
     private String content;
 
-    @Builder
+    // @Builder(access = AccessLevel.PRIVATE): builder() 메서드를 private으로 제한
+    // @Builder를 생성자에 붙이면 Lombok이 public static builder()를 자동 생성하는데,
+    // 이 경우 Review.builder()...build()로 create()를 우회할 수 있어 validateRating()이 실행되지 않음.
+    // access = PRIVATE으로 builder() 자체를 막아, 반드시 create()를 통해서만 생성하도록 강제.
+    @Builder(access = AccessLevel.PRIVATE)
     private Review(Trade trade, Member reviewer, Member reviewee, BigDecimal rating, String content) {
         this.trade = trade;
         this.reviewer = reviewer;
@@ -47,7 +51,9 @@ public class Review extends BaseEntity {
         this.rating = rating;
         this.content = content;
     }
-    // 리뷰 생성 메서드
+
+    // 리뷰 생성 시 반드시 이 메서드를 통해야 함 — 유일한 진입점
+    // 직접 builder() 호출은 access = PRIVATE으로 차단되어 있음
     public static Review create(Trade trade, Member reviewer, Member reviewee, BigDecimal rating, String content) {
         validateRating(rating);
         return Review.builder()
