@@ -92,6 +92,7 @@ public class Product extends BaseEntity {
         // 2. null이 아니면 일단 기존 이미지를 모두 비움
         // (빈 리스트([])가 들어오면 아래 루프를 타지 않으므로 '전체 삭제'가 됨)
         List<String> distinctUrls = newUrls.stream()
+                .filter(url -> url != null && !url.isBlank())
                 .distinct()
                 .toList();
         this.images.clear();

@@ -4,12 +4,15 @@ import com.clone.getchu.domain.product.dto.ProductSearchCondition;
 import com.clone.getchu.domain.product.entity.Product;
 import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.global.common.CursorPageResponse;
+import com.clone.getchu.global.exception.BusinessException;
+import com.clone.getchu.global.exception.ErrorCode;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import static com.clone.getchu.domain.product.entity.QProduct.product;
@@ -24,14 +27,16 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         List<Product> content = queryFactory
                 .selectFrom(product)
                 .leftJoin(product.category).fetchJoin()
+                .leftJoin(product.images).fetchJoin()
                 .where(
-                        combineCursorCondition(condition.cursor()), // 복합 커서 조건 적용
+                        combineCursorCondition(condition.cursor()),
                         eqCategoryId(condition.categoryId()),
                         containsKeyword(condition.keyword()),
                         eqStatus(condition.status()),
                         product.isDeleted.isFalse()
                 )
-                .orderBy(product.createdAt.desc(), product.id.desc()) // 복합 정렬
+                .distinct()
+                .orderBy(product.createdAt.desc(), product.id.desc())
                 .limit(pageable.getPageSize() + 1)
                 .fetch();
 
@@ -41,20 +46,26 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     private BooleanExpression combineCursorCondition(String cursor) {
         if (cursor == null || cursor.isBlank()) return null;
 
-        // 커서 파싱 (예: "2024-04-16T12:00:00_153")
-        String[] parts = cursor.split("_");
-        LocalDateTime cursorDateTime = LocalDateTime.parse(parts[0]);
-        Long cursorId = Long.valueOf(parts[1]);
+        try {
+            // 1. 형식 검증 및 분리
+            String[] parts = cursor.split("_");
+            if (parts.length != 2) {
+                throw new BusinessException(ErrorCode.INVALID_CURSOR_FORMAT);
+            }
 
-        return product.createdAt.lt(cursorDateTime)
-                .or(product.createdAt.eq(cursorDateTime).and(product.id.lt(cursorId)));
+            // 2. 데이터 파싱
+            LocalDateTime cursorDateTime = LocalDateTime.parse(parts[0]);
+            Long cursorId = Long.valueOf(parts[1]);
+
+            // 3. 조건 생성
+            return product.createdAt.lt(cursorDateTime)
+                    .or(product.createdAt.eq(cursorDateTime).and(product.id.lt(cursorId)));
+
+        } catch (DateTimeParseException | NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            throw new BusinessException(ErrorCode.INVALID_CURSOR_FORMAT);
+        }
     }
     // --- 동적 쿼리용 BooleanExpression ---
-
-    private BooleanExpression ltCursorId(String cursor) {
-        if (cursor == null || cursor.isBlank()) return null;
-        return product.id.lt(Long.valueOf(cursor));
-    }
 
     private BooleanExpression containsKeyword(String keyword) {
         return (keyword != null && !keyword.isBlank()) ? product.title.contains(keyword) : null;

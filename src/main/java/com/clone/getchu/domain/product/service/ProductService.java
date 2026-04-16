@@ -80,7 +80,9 @@ public class ProductService {
     }
 
     public CursorPageResponse<ProductListResponse> searchProducts(ProductSearchCondition cond, Pageable pageable) {
-        CursorPageResponse<Product> productSlice = productRepository.searchByCursor(cond, pageable);
+        ProductSearchCondition searchCond = applyDefaultStatus(cond);
+
+        CursorPageResponse<Product> productSlice = productRepository.searchByCursor(searchCond, pageable);
 
         List<ProductListResponse> dtoList = productSlice.getContent().stream()
                 .map(ProductListResponse::from)
@@ -115,5 +117,17 @@ public class ProductService {
         if (!product.getSeller().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
+    }
+    private ProductSearchCondition applyDefaultStatus(ProductSearchCondition cond) {
+        if (cond.status() == null) {
+            // Record라면 새로운 객체 생성, 일반 클래스라면 setter나 copy 메서드 활용
+            return new ProductSearchCondition(
+                    cond.keyword(),
+                    cond.categoryId(),
+                    ProductEnum.SALE,
+                    cond.cursor()
+            );
+        }
+        return cond;
     }
 }
