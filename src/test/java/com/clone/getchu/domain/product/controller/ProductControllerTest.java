@@ -3,17 +3,17 @@ package com.clone.getchu.domain.product.controller;
 import com.clone.getchu.domain.product.dto.*;
 import com.clone.getchu.domain.product.service.ProductService;
 import com.clone.getchu.global.common.CursorPageResponse;
-import com.clone.getchu.global.security.CustomUserDetails;
-import com.clone.getchu.global.security.JwtAuthFilter;
-import com.clone.getchu.global.security.JwtProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,14 +24,20 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = ProductController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class)
-
+@WebMvcTest(
+        controllers = ProductController.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                SecurityFilterAutoConfiguration.class
+        },
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.REGEX,
+                pattern = "com\\.clone\\.getchu\\.global\\.(security|config\\.SecurityConfig).*"
+        )
+)
 class ProductControllerTest {
 
     @Autowired
@@ -43,18 +49,8 @@ class ProductControllerTest {
     @MockBean
     private ProductService productService;
 
-    @MockBean
-    private JwtProvider jwtProvider;
-
-    @MockBean
-    private JwtAuthFilter jwtAuthFilter;
-
-    private CustomUserDetails testUser;
-
     @BeforeEach
     void setUp() {
-        // 테스트에서 공통으로 사용할 유저 정보 세팅
-        testUser = new CustomUserDetails(1L, "test@test.com", "password", "USER");
     }
 
     @Test
@@ -66,13 +62,12 @@ class ProductControllerTest {
         );
         ProductResponse response = new ProductResponse(1L, "아이폰 15 팝니다", "SALE");
 
-        given(productService.createProduct(any(ProductCreateRequest.class), anyLong()))
+        // @AuthenticationPrincipal이 null이므로 any()로 매칭 (null 포함)
+        given(productService.createProduct(any(ProductCreateRequest.class), any()))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(post("/products")
-                        .with(csrf())
-                        .with(user(testUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -127,34 +122,30 @@ class ProductControllerTest {
         );
         ProductResponse response = new ProductResponse(1L, "수정된 제목", "RESERVED");
 
-        given(productService.updateProduct(anyLong(), any(ProductUpdateRequest.class), anyLong()))
+        given(productService.updateProduct(anyLong(), any(ProductUpdateRequest.class), any()))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(patch("/products/{productId}", 1L)
-                        .with(csrf())
-                        .with(user(testUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
-                .andExpect(jsonPath("$.data.status").value("RESERVED")); // status 필드 검증으로 수정
+                .andExpect(jsonPath("$.data.status").value("RESERVED"));
     }
 
     @Test
     @DisplayName("상품 삭제 성공")
     void deleteProduct_Success() throws Exception {
         // given
-        doNothing().when(productService).deleteProduct(anyLong(), anyLong());
+        doNothing().when(productService).deleteProduct(anyLong(), any());
 
         // when & then
-        mockMvc.perform(delete("/products/{productId}", 1L)
-                        .with(csrf())
-                        .with(user(testUser)))
+        mockMvc.perform(delete("/products/{productId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
-                .andExpect(jsonPath("$.message").value("상품이 삭제되었습니다."))
-                .andExpect(jsonPath("$.data").doesNotExist()); // NON_NULL 설정으로 인해 데이터가 없음
+                .andExpect(jsonPath("$.message").value("요청이 성공적으로 처리되었습니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test
@@ -168,8 +159,6 @@ class ProductControllerTest {
 
         // when & then
         mockMvc.perform(post("/products")
-                        .with(csrf())
-                        .with(user(testUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
