@@ -76,13 +76,12 @@ public class TradeService {
 
         if(targetStatus == TradeStatus.SALE){
             trade.cancel();
+            trade.getProduct().updateProduct(null, null, null, ProductEnum.SALE, null, null);
         } else {
             // "진행" 흐름: SALE -> RESERVED -> TRADING -> SOLD 순차 진행
             validateTransition(trade.getStatus(), targetStatus);
             trade.proceed();
         }
-
-        //product 상태 동기화
 
     }
     //상태 전이 검증
