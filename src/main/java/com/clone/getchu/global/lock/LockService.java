@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -43,19 +41,7 @@ public class LockService {
                 try {
                     return supplier.get();
                 } finally {
-                    // 현재 진행중인 트랜잭션이 있는지 확인 (있다면 락 해제하지 않음)
-                    if (TransactionSynchronizationManager.isActualTransactionActive()) {
-                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                            @Override
-                            public void afterCompletion(int status) {
-                                // 커밋이든 롤백이든 트랜잭션이 완전히 종료된 후에 락을 가장 마지막에 해제
-                                redisLockRepository.unlock(key, value);
-                            }
-                        });
-                    } else {
-                        // 현재 시작된 트랜잭션이 없다면 즉각 해제 (Facade 패턴일 경우 이쪽을 탐)
-                        redisLockRepository.unlock(key, value);
-                    }
+                    redisLockRepository.unlock(key, value);
                 }
             }
 
