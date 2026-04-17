@@ -202,4 +202,42 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("내 판매 목록 조회 성공 - /products/me")
+    void getMyProducts_Success() throws Exception {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. DTO 구조에 맞춘 응답 데이터 생성
+        ProductListResponse myProduct = new ProductListResponse(
+                1L,
+                "내가 파는 상품",
+                50000,
+                ProductEnum.SALE,
+                "https://image.com/thumb1.jpg",
+                now
+        );
+
+        CursorPageResponse<ProductListResponse> pageResponse = new CursorPageResponse<>(
+                List.of(myProduct),
+                now.toString() + "_1",
+                false
+        );
+
+        given(productService.getMyProducts(any(), any(), any(), any(Pageable.class)))
+                .willReturn(pageResponse);
+
+        // when & then
+        mockMvc.perform(get("/products/me")
+                        .param("status", "SALE")
+                        .param("size", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.content[0].id").value(1L))
+                .andExpect(jsonPath("$.data.content[0].title").value("내가 파는 상품"))
+                .andExpect(jsonPath("$.data.content[0].thumbnailUrl").value("https://image.com/thumb1.jpg"))
+                .andExpect(jsonPath("$.data.hasNext").value(false));
+    }
 }
