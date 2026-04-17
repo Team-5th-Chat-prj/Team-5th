@@ -1,9 +1,12 @@
 package com.clone.getchu.domain.product.controller;
 
 import com.clone.getchu.domain.product.dto.*;
+import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.service.ProductService;
 import com.clone.getchu.global.common.ApiResponse;
 import com.clone.getchu.global.common.CursorPageResponse;
+import com.clone.getchu.global.exception.BusinessException;
+import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -63,5 +66,22 @@ public class ProductController {
 
         productService.deleteProduct(productId, userDetails.getMemberId());
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<CursorPageResponse<ProductListResponse>>> getMyProducts(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) ProductEnum status,
+            @RequestParam(required = false) String cursor,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        if (userDetails == null || userDetails.getMemberId() == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        CursorPageResponse<ProductListResponse> response =
+                productService.getMyProducts(userDetails.getMemberId(), status, cursor, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

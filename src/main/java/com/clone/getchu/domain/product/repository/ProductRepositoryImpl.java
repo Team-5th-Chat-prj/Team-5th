@@ -41,6 +41,23 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return convertToCursorPage(pageable, content);
     }
 
+    @Override
+    public CursorPageResponse<Product> findMyProducts(Long sellerId, ProductEnum status, String cursor, Pageable pageable) {
+        List<Product> content = queryFactory
+                .selectFrom(product)
+                .where(
+                        product.seller.id.eq(sellerId), // 내 상품만
+                        combineCursorCondition(cursor),
+                        eqStatus(status),               // 상태 필터 (선택적)
+                        product.isDeleted.isFalse()
+                )
+                .orderBy(product.createdAt.desc(), product.id.desc())
+                .limit(pageable.getPageSize() + 1)
+                .fetch();
+
+        return convertToCursorPage(pageable, content);
+    }
+
     private BooleanExpression combineCursorCondition(String cursor) {
         if (cursor == null || cursor.isBlank()) return null;
 
