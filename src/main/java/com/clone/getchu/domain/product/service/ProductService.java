@@ -105,6 +105,18 @@ public class ProductService {
         product.softDelete();
     }
 
+    public CursorPageResponse<ProductListResponse> getMyProducts(Long memberId, ProductEnum status, String cursor, Pageable pageable) {
+        // 1. 데이터 조회
+        CursorPageResponse<Product> result = productRepository.findMyProducts(memberId, status, cursor, pageable);
+
+        // 2. Entity -> DTO 변환
+        List<ProductListResponse> responseDtos = result.getContent().stream()
+                .map(ProductListResponse::from)
+                .toList();
+
+        return new CursorPageResponse<>(responseDtos, result.getNextCursor(), result.isHasNext());
+    }
+
     // --- Helper Methods ---
 
     private Product findActiveProduct(Long productId) {
