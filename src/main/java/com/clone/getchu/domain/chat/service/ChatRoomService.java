@@ -43,7 +43,10 @@ public class ChatRoomService {
         // 이미 존재하는 채팅방 확인 (멱등)
         Optional<ChatRoom> existingRoom = chatRoomRepository.findByBuyerIdAndProductId(buyerId, request.productId());
         if (existingRoom.isPresent()) {
-            return new ChatRoomResponse(existingRoom.get().getId(), false);
+            ChatRoom room = existingRoom.get();
+            // 구매자가 이전에 방을 나갔을 경우 재입장 처리
+            room.reenterRoom(buyerId);
+            return new ChatRoomResponse(room.getId(), false);
         }
 
         // 새 채팅방 생성
@@ -83,10 +86,12 @@ public class ChatRoomService {
     /**
      * 채팅방 나가기 (Soft Delete)
      * - DB에서 삭제하지 않고, 나갔다는 플래그만 변경
+     * - 채팅방 존재 여부만 확인하고, 참여자 권한 검증은 엔티티의 leaveRoom()에 위임
      */
     @Transactional
     public void leaveChatRoom(Long memberId, Long chatRoomId) {
-        ChatRoom chatRoom = validateAndGetChatRoom(chatRoomId, memberId);
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.CHAT_ROOM_NOT_FOUND));
         chatRoom.leaveRoom(memberId);
     }
 }
