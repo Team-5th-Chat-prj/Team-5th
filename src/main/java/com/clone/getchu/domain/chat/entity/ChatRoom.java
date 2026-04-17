@@ -1,6 +1,8 @@
 package com.clone.getchu.domain.chat.entity;
 
 import com.clone.getchu.global.common.BaseEntity;
+import com.clone.getchu.global.exception.ErrorCode;
+import com.clone.getchu.global.exception.ForbiddenException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -61,6 +63,8 @@ public class ChatRoom extends BaseEntity {
             this.deletedByBuyer = true;
         } else if (this.sellerId.equals(memberId)) {
             this.deletedBySeller = true;
+        } else {
+            throw new ForbiddenException(ErrorCode.CHAT_FORBIDDEN);
         }
     }
 

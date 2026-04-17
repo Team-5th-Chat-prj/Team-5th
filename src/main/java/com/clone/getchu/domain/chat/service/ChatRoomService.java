@@ -6,9 +6,8 @@ import com.clone.getchu.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.clone.getchu.domain.chat.entity.ChatRoom;
 import com.clone.getchu.domain.chat.repository.ChatMessageRepository;
 import com.clone.getchu.domain.chat.repository.ChatRoomRepository;
-import com.clone.getchu.domain.member.entity.Member;
-import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.global.exception.ErrorCode;
+import com.clone.getchu.global.exception.ForbiddenException;
 import com.clone.getchu.global.exception.InvalidRequestException;
 import com.clone.getchu.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +23,6 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final MemberRepository memberRepository;
 
     /**
      * 채팅방 생성 (멱등)
@@ -77,7 +74,7 @@ public class ChatRoomService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         if (!chatRoom.getBuyerId().equals(memberId) && !chatRoom.getSellerId().equals(memberId)) {
-            throw new com.clone.getchu.global.exception.ForbiddenException(ErrorCode.CHAT_FORBIDDEN);
+            throw new ForbiddenException(ErrorCode.CHAT_FORBIDDEN);
         }
 
         return chatRoom;
