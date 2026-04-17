@@ -82,4 +82,14 @@ public class ChatRoomService {
 
         return chatRoom;
     }
+
+    /**
+     * 채팅방 나가기 (Soft Delete)
+     * - DB에서 삭제하지 않고, 나갔다는 플래그만 변경
+     */
+    @Transactional
+    public void leaveChatRoom(Long memberId, Long chatRoomId) {
+        ChatRoom chatRoom = validateAndGetChatRoom(chatRoomId, memberId);
+        chatRoom.leaveRoom(memberId);
+    }
 }

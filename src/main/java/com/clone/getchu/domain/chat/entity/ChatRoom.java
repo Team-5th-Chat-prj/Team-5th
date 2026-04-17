@@ -39,6 +39,12 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
+    @Column(name = "deleted_by_buyer", nullable = false)
+    private boolean deletedByBuyer = false;
+
+    @Column(name = "deleted_by_seller", nullable = false)
+    private boolean deletedBySeller = false;
+
     @Builder
     private ChatRoom(Long productId, Long buyerId, Long sellerId) {
         this.productId = productId;
@@ -48,5 +54,18 @@ public class ChatRoom extends BaseEntity {
 
     public void updateLastMessageAt(LocalDateTime lastMessageAt) {
         this.lastMessageAt = lastMessageAt;
+    }
+
+    public void leaveRoom(Long memberId) {
+        if (this.buyerId.equals(memberId)) {
+            this.deletedByBuyer = true;
+        } else if (this.sellerId.equals(memberId)) {
+            this.deletedBySeller = true;
+        }
+    }
+
+    public void reenterRoom() {
+        this.deletedByBuyer = false;
+        this.deletedBySeller = false;
     }
 }
