@@ -63,8 +63,8 @@ public class ChatMessageService {
      */
     @Transactional(readOnly = true)
     public CursorPageResponse<ChatMessageResponse> getMessages(Long chatRoomId, Long memberId, Long cursor, int size) {
-        // 채팅방 존재 + 참여자 검증
-        chatRoomService.validateAndGetChatRoom(chatRoomId, memberId);
+        // 채팅방 존재 + 참여자 검증 + 나가지 않은 상태인지 검증
+        chatRoomService.validateActiveChatRoom(chatRoomId, memberId);
 
         int fetchSize = size + 1; // hasNext 판단용 +1
         PageRequest pageable = PageRequest.of(0, fetchSize);

@@ -1,5 +1,6 @@
 package com.clone.getchu.global.security;
 
+import com.clone.getchu.domain.chat.service.ChatRoomService;
 import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.UnauthorizedException;
 import com.clone.getchu.global.util.RedisKeyConstants;
@@ -36,6 +37,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
     private final JwtProvider jwtProvider;
     private final StringRedisTemplate stringRedisTemplate;
+    private final ChatRoomService chatRoomService;
 
     // 메시지가 채널로 전송되기 직전에 호출됨
     @Override
@@ -65,6 +67,24 @@ public class StompChannelInterceptor implements ChannelInterceptor {
             // STOMP 세션에 인증 정보 등록 - 이후 convertAndSendToUser() 시 이 user 정보를 사용해 라우팅
             accessor.setUser(auth);
             log.debug("WebSocket CONNECT 인증 성공 - user: {}", auth.getName());
+        }
+
+        // 구독(SUBSCRIBE) 시 채팅방 참여자 검증 (나간 방 접근 차단)
+        if (accessor != null && StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            String destination = accessor.getDestination();
+            if (destination != null && destination.startsWith("/topic/room.")) {
+                try {
+                    Long chatRoomId = Long.valueOf(destination.substring("/topic/room.".length()));
+                    Authentication auth = (Authentication) accessor.getUser();
+                    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+                        // 읽기(구독) 권한은 나가지 않은 참여자만 가능
+                        chatRoomService.validateActiveChatRoom(chatRoomId, userDetails.getMemberId());
+                        log.debug("WebSocket SUBSCRIBE 검증 성공 - room:{}, user:{}", chatRoomId, userDetails.getMemberId());
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("STOMP 구독 목적지 형식 오류: {}", destination);
+                }
+            }
         }
 
         return message;

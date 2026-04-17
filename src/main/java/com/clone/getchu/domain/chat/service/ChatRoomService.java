@@ -85,6 +85,21 @@ public class ChatRoomService {
     }
 
     /**
+     * 채팅방 존재 확인 및 활성 참여자(나가지 않은 상태) 검증
+     * - 메시지 이력 조회, 무한 스크롤, STOMP 구독 등 '읽기' 권한 검증에 사용
+     */
+    @Transactional(readOnly = true)
+    public ChatRoom validateActiveChatRoom(Long chatRoomId, Long memberId) {
+        ChatRoom chatRoom = validateAndGetChatRoom(chatRoomId, memberId);
+
+        if (chatRoom.isLeftBy(memberId)) {
+            throw new ForbiddenException(ErrorCode.CHAT_ALREADY_LEFT);
+        }
+
+        return chatRoom;
+    }
+
+    /**
      * 채팅방 나가기 (Soft Delete)
      * - DB에서 삭제하지 않고, 나갔다는 플래그만 변경
      * - 채팅방 존재 여부만 확인하고, 참여자 권한 검증은 엔티티의 leaveRoom()에 위임

@@ -40,6 +40,7 @@ public enum ErrorCode {
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "C001", "존재하지 않는 채팅방입니다."),
     SELF_CHAT(HttpStatus.BAD_REQUEST, "C002", "본인의 판매글에는 채팅을 시작할 수 없습니다."),
     CHAT_FORBIDDEN(HttpStatus.FORBIDDEN, "C003", "해당 채팅방에 대한 권한이 없습니다."),
+    CHAT_ALREADY_LEFT(HttpStatus.FORBIDDEN, "C004", "이미 나간 채팅방입니다."),
 
     // ===== REVIEW (R) =====
     REVIEW_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "R001", "거래 완료(SOLD) 상태에서만 리뷰를 작성할 수 있습니다."),
