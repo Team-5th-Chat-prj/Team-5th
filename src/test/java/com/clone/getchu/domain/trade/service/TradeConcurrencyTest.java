@@ -135,8 +135,9 @@ class TradeConcurrencyTest {
             });
         }
 
-        // await(): Latch의 카운트가 0이 될 때까지 현재 메인 스레드의 실행을 일시 중단
-        latch.await();
+        // await(): Latch의 카운트가 0이 될 때까지 현재 메인 스레드의 실행을 일시 중단 (타임아웃 10초)
+        boolean completed = latch.await(10, java.util.concurrent.TimeUnit.SECONDS);
+        assertThat(completed).as("시간 내에 모든 스레드가 작업을 완료해야 합니다.").isTrue();
 
         // 단 1개의 요청만 성공하고 99개는 예외(이미 예약됨) 발생
         assertThat(successCount.get()).isEqualTo(1);
