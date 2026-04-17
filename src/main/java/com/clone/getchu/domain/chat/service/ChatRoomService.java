@@ -44,8 +44,9 @@ public class ChatRoomService {
         Optional<ChatRoom> existingRoom = chatRoomRepository.findByBuyerIdAndProductId(buyerId, request.productId());
         if (existingRoom.isPresent()) {
             ChatRoom room = existingRoom.get();
-            // 구매자가 이전에 방을 나갔을 경우 재입장 처리
+            // 구매자가 이전에 방을 나갔을 경우 재입장 처리 후 즉시 DB 반영
             room.reenterRoom(buyerId);
+            chatRoomRepository.saveAndFlush(room);
             return new ChatRoomResponse(room.getId(), false);
         }
 
@@ -87,11 +88,13 @@ public class ChatRoomService {
      * 채팅방 나가기 (Soft Delete)
      * - DB에서 삭제하지 않고, 나갔다는 플래그만 변경
      * - 채팅방 존재 여부만 확인하고, 참여자 권한 검증은 엔티티의 leaveRoom()에 위임
+     * - saveAndFlush()로 영속성 컨텍스트를 즉시 DB에 반영하여 JPQL 쿼리와의 비동기화 방지
      */
     @Transactional
     public void leaveChatRoom(Long memberId, Long chatRoomId) {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.CHAT_ROOM_NOT_FOUND));
         chatRoom.leaveRoom(memberId);
+        chatRoomRepository.saveAndFlush(chatRoom); // Soft Delete 플래그 즉시 DB 반영
     }
 }
