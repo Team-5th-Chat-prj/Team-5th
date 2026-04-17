@@ -39,7 +39,8 @@ public class ReviewService {
      */
     @Transactional
     public void createReview(CustomUserDetails userDetails, Long tradeId, ReviewRequest request) {
-        Trade trade = tradeRepository.findById(tradeId)
+        // buyer, seller를 함께 로딩하여 이후 프록시 초기화로 인한 추가 쿼리 방지
+        Trade trade = tradeRepository.findWithBuyerAndSellerById(tradeId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.TRADE_NOT_FOUND));
 
         // 거래 완료 상태만 리뷰 작성 가능
@@ -57,18 +58,19 @@ public class ReviewService {
             throw new ConflictException(ErrorCode.REVIEW_ALREADY_EXISTS);
         }
 
+        // 비관적 락을 먼저 획득하여 리뷰 저장과 평점 업데이트를 동일 락 범위 안에서 처리
+        // — flush 이전에 락 범위를 확정하여 Lost Update 방지
+        Member seller = memberRepository.findByIdWithLock(trade.getSeller().getId())
+                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+
         Review review = Review.create(
                 trade,
                 trade.getBuyer(),   // reviewer = 구매자
-                trade.getSeller(),  // reviewee = 판매자
+                seller,             // reviewee = 판매자 (락으로 조회한 엔티티 재사용)
                 request.rating(),
                 request.content()
         );
         reviewRepository.save(review);
-
-        // 비관적 락으로 판매자를 다시 조회하여 동시 요청 간 Lost Update 방지
-        Member seller = memberRepository.findByIdWithLock(trade.getSeller().getId())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
         seller.updateReviewStats(request.rating());
     }
 
@@ -81,6 +83,26 @@ public class ReviewService {
 
         // size + 1개를 조회하여 다음 페이지 존재 여부 판단
         List<ReviewResponse> results = reviewRepository.findReviewsByRevieweeIdWithCursor(
+                memberId, cursorId, PageRequest.of(0, size + 1)
+        );
+
+        boolean hasNext = results.size() > size;
+        List<ReviewResponse> content = hasNext ? results.subList(0, size) : results;
+        String nextCursor = hasNext
+                ? CursorUtil.encodeCursor(content.get(content.size() - 1).id().toString())
+                : null;
+
+        return new CursorPageResponse<>(content, nextCursor, hasNext);
+    }
+
+    /**
+     * 작성한 리뷰 목록 조회 (커서 기반 페이지네이션, 비로그인 가능)
+     * cursor: base64(reviewId) — null이면 첫 페이지
+     */
+    public CursorPageResponse<ReviewResponse> getWrittenReviews(Long memberId, String cursor, int size) {
+        Long cursorId = decodeCursor(cursor);
+
+        List<ReviewResponse> results = reviewRepository.findReviewsByReviewerIdWithCursor(
                 memberId, cursorId, PageRequest.of(0, size + 1)
         );
 

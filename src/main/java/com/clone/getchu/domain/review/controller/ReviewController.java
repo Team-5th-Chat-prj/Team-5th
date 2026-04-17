@@ -43,4 +43,14 @@ public class ReviewController {
         CursorPageResponse<ReviewResponse> response = reviewService.getReviews(memberId, cursor, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    // 작성한 리뷰 목록 조회 — 비로그인 가능, 커서 기반 페이지네이션
+    @GetMapping("/members/{memberId}/reviews/written")
+    public ResponseEntity<ApiResponse<CursorPageResponse<ReviewResponse>>> getWrittenReviews(
+            @PathVariable Long memberId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") @Positive @Max(50) int size) {
+        CursorPageResponse<ReviewResponse> response = reviewService.getWrittenReviews(memberId, cursor, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

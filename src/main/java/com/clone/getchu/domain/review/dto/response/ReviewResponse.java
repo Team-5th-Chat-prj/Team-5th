@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public record ReviewResponse(
         Long id,
+        Long reviewerId,
         BigDecimal rating,
         String content,
         LocalDateTime createdAt,

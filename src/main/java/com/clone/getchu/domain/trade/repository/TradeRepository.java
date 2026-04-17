@@ -13,6 +13,10 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     @EntityGraph(attributePaths = {"product", "product.seller", "buyer", "seller"})
     Optional<Trade> findWithAllById(Long id);
 
+    // 리뷰 작성 시 조회 — buyer, seller만 fetch join하여 N+1 방지
+    @EntityGraph(attributePaths = {"buyer", "seller"})
+    Optional<Trade> findWithBuyerAndSellerById(Long id);
+
     // 나의 판매 내역 조회
     @EntityGraph(attributePaths = {"product", "buyer", "seller"})
     List<Trade> findAllBySellerIdOrderByCreatedAtDesc(Long sellerId);

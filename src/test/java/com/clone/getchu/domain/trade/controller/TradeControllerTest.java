@@ -20,6 +20,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationExtension;
+import com.clone.getchu.support.WithMockCustomUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -60,31 +61,32 @@ class TradeControllerTest {
     protected ObjectMapper objectMapper;
 
     @Test
-    @WithMockUser
+    @WithMockCustomUser(memberId = 2L, email = "buyer@email.com", nickname = "구매자닉네임")
     @DisplayName("상품 예약 요청 시 200 OK와 예약 정보를 반환한다")
     void reserveProduct_Success() throws Exception {
         // given
         Long productId = 1L;
-        Long buyerId = 2L;
 
         TradeReserveResponse response = new TradeReserveResponse(
                 100L,
                 "아이폰 17",
+                "판매자닉네임",
                 "구매자닉네임"
         );
 
-        // 서비스 호출 시 결과값 모킹
-        given(tradeService.reserveProduct(eq(productId), eq(buyerId), any()))
+        // 서비스 호출 시 결과값 모킹 — buyerId는 SecurityContext에서 주입되므로 any()로 매칭
+        given(tradeService.reserveProduct(eq(productId), any()))
                 .willReturn(response);
 
         // when & then
-        mockMvc.perform(post("/products/{productId}/reserve/{buyerId}", productId, buyerId)
+        mockMvc.perform(post("/products/{productId}/reserve", productId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf())) // 시큐리티 보호 통과
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("SUCCESS"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tradeId").value(100L))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.productTitle").value("아이폰 17"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.sellerNickname").value("판매자닉네임"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.buyerNickname").value("구매자닉네임"))
                 .andDo(print());
     }
