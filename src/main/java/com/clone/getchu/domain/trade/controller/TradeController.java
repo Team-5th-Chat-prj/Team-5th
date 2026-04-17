@@ -5,6 +5,7 @@ import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
 import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
 import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
 import com.clone.getchu.domain.trade.enums.TradeRole;
+import com.clone.getchu.domain.trade.service.TradeFacade;
 import com.clone.getchu.domain.trade.service.TradeService;
 import com.clone.getchu.global.common.ApiResponse;
 import com.clone.getchu.global.security.CustomUserDetails;
@@ -21,6 +22,7 @@ import java.util.List;
 public class TradeController {
 
     private final TradeService tradeService;
+    private final TradeFacade tradeFacade;
 
     //상품 예약 요청
     @PostMapping("/products/{productId}/reserve")
@@ -28,7 +30,7 @@ public class TradeController {
             @PathVariable Long productId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        TradeReserveResponse response = tradeService.reserveProduct(
+        TradeReserveResponse response = tradeFacade.reserveProduct(
                 productId,
                 userDetails.getMemberId()); //현재 로그인 한 사람이 구매자
 

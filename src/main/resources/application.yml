@@ -25,3 +25,10 @@ jwt:
   secret-key: ${JWT_SECRET_KEY}
   access-expiration-time: ${JWT_ACCESS_EXPIRATION_TIME:900000}      # 15분
   refresh-expiration-time: ${JWT_REFRESH_EXPIRATION_TIME:604800000} # 7일
+
+lock:
+  retry:
+    max: 10
+    initial-backoff-ms: 50
+    max-backoff-ms: 1000
+  expiration-seconds: 3

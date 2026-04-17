@@ -3,6 +3,7 @@ package com.clone.getchu.domain.trade.controller;
 import com.clone.getchu.domain.trade.dto.request.TradeStatusUpdateRequest;
 import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
+import com.clone.getchu.domain.trade.service.TradeFacade;
 import com.clone.getchu.domain.trade.service.TradeService;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -56,6 +57,9 @@ class TradeControllerTest {
     @MockBean
     private TradeService tradeService;
 
+    @MockBean
+    private TradeFacade tradeFacade;
+
     @Autowired
     protected ObjectMapper objectMapper;
 
@@ -70,15 +74,18 @@ class TradeControllerTest {
         TradeReserveResponse response = new TradeReserveResponse(
                 100L,
                 "아이폰 17",
+                "판매자닉네임",
                 "구매자닉네임"
         );
 
         // 서비스 호출 시 결과값 모킹
-        given(tradeService.reserveProduct(eq(productId), eq(buyerId), any()))
+        // buyerId is expected to arise from userDetails.getMemberId(), which might not be buyerId in WithMockUser default. 
+        // We will just use any(Long.class) for memberId since WithMockUser's principal handling might vary.
+        given(tradeFacade.reserveProduct(eq(productId), any()))
                 .willReturn(response);
 
         // when & then
-        mockMvc.perform(post("/products/{productId}/reserve/{buyerId}", productId, buyerId)
+        mockMvc.perform(post("/products/{productId}/reserve", productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf())) // 시큐리티 보호 통과
                 .andExpect(status().isOk())
