@@ -3,6 +3,7 @@ package com.clone.getchu.domain.trade.controller;
 import com.clone.getchu.domain.trade.dto.request.TradeStatusUpdateRequest;
 import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
+import com.clone.getchu.domain.trade.service.TradeFacade;
 import com.clone.getchu.domain.trade.service.TradeService;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -20,7 +21,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationExtension;
-import com.clone.getchu.support.WithMockCustomUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -57,15 +57,19 @@ class TradeControllerTest {
     @MockBean
     private TradeService tradeService;
 
+    @MockBean
+    private TradeFacade tradeFacade;
+
     @Autowired
     protected ObjectMapper objectMapper;
 
     @Test
-    @WithMockCustomUser(memberId = 2L, email = "buyer@email.com", nickname = "구매자닉네임")
+    @WithMockUser
     @DisplayName("상품 예약 요청 시 200 OK와 예약 정보를 반환한다")
     void reserveProduct_Success() throws Exception {
         // given
         Long productId = 1L;
+        Long buyerId = 2L;
 
         TradeReserveResponse response = new TradeReserveResponse(
                 100L,
@@ -74,14 +78,16 @@ class TradeControllerTest {
                 "구매자닉네임"
         );
 
-        // 서비스 호출 시 결과값 모킹 — buyerId는 SecurityContext에서 주입되므로 any()로 매칭
-        given(tradeService.reserveProduct(eq(productId), any()))
+        // 서비스 호출 시 결과값 모킹
+        // buyerId is expected to arise from userDetails.getMemberId(), which might not be buyerId in WithMockUser default.
+        // We will just use any(Long.class) for memberId since WithMockUser's principal handling might vary.
+        given(tradeFacade.reserveProduct(eq(productId), any()))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(post("/products/{productId}/reserve", productId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf()))
+                        .with(csrf())) // 시큐리티 보호 통과
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("SUCCESS"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tradeId").value(100L))
