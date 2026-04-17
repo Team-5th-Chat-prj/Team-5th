@@ -2,6 +2,7 @@ package com.clone.getchu.global.exception;
 
 import com.clone.getchu.global.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .badRequest()
             .body(ErrorResponse.ofValidation(e.getBindingResult().getFieldErrors()));
+    }
+
+    // @Validated + @Max/@Positive 등 메서드 파라미터 제약 위반 (@RequestParam, @PathVariable)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(v -> v.getMessage())
+                .findFirst()
+                .orElse("입력값이 올바르지 않습니다.");
+        return ResponseEntity
+                .badRequest()
+                .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, message));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

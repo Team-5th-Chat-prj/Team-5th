@@ -2,7 +2,7 @@
 
 Spring REST Docs + restdocs-api-spec을 사용해 컨트롤러 테스트를 작성하면,  
 테스트 통과 시 `build/generated-snippets/` 아래에 스니펫이 생성되고  
-`./gradlew openapi3` 실행 시 `build/api-spec/openapi3.yaml` 이 자동으로 만들어집니다.
+`./gradlew copyOpenApi` 실행 시 `docs/api-spec/openapi3.yaml` 이 자동으로 만들어집니다.
 
 ---
 

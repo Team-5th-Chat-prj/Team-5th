@@ -79,7 +79,7 @@ class TradeControllerTest {
         );
 
         // 서비스 호출 시 결과값 모킹
-        // buyerId is expected to arise from userDetails.getMemberId(), which might not be buyerId in WithMockUser default. 
+        // buyerId is expected to arise from userDetails.getMemberId(), which might not be buyerId in WithMockUser default.
         // We will just use any(Long.class) for memberId since WithMockUser's principal handling might vary.
         given(tradeFacade.reserveProduct(eq(productId), any()))
                 .willReturn(response);
@@ -92,6 +92,7 @@ class TradeControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("SUCCESS"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tradeId").value(100L))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.productTitle").value("아이폰 17"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.sellerNickname").value("판매자닉네임"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.buyerNickname").value("구매자닉네임"))
                 .andDo(print());
     }

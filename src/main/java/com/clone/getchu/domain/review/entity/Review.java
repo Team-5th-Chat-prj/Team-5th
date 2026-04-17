@@ -15,7 +15,8 @@ import java.math.BigDecimal;
 
 @Getter
 @Entity
-@Table(name = "reviews")
+@Table(name = "reviews",
+        indexes = @Index(name = "idx_review_reviewee_id", columnList = "reviewee_id, id"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Review extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
