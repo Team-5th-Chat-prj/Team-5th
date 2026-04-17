@@ -46,8 +46,9 @@ public class ChatMessageService {
                 .build();
         chatMessageRepository.save(message);
 
-        // 채팅방 lastMessageAt 갱신
+        // lastMessageAt 갱신 & 메시지를 보낸 사람의 퇴장 상태만 복구
         chatRoom.updateLastMessageAt(LocalDateTime.now());
+        chatRoom.reenterRoom(senderId);
 
         // STOMP 브로드캐스트 → /topic/room.{chatRoomId}
         ChatMessageResponse response = ChatMessageResponse.from(message);
@@ -62,8 +63,8 @@ public class ChatMessageService {
      */
     @Transactional(readOnly = true)
     public CursorPageResponse<ChatMessageResponse> getMessages(Long chatRoomId, Long memberId, Long cursor, int size) {
-        // 채팅방 존재 + 참여자 검증
-        chatRoomService.validateAndGetChatRoom(chatRoomId, memberId);
+        // 채팅방 존재 + 참여자 검증 + 나가지 않은 상태인지 검증
+        chatRoomService.validateActiveChatRoom(chatRoomId, memberId);
 
         int fetchSize = size + 1; // hasNext 판단용 +1
         PageRequest pageable = PageRequest.of(0, fetchSize);

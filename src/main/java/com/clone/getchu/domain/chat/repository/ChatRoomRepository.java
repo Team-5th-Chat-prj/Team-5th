@@ -25,7 +25,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
            ") " +
            "FROM ChatRoom cr " +
            "LEFT JOIN Member m ON (CASE WHEN cr.buyerId = :memberId THEN cr.sellerId ELSE cr.buyerId END) = m.id " +
-           "WHERE cr.buyerId = :memberId OR cr.sellerId = :memberId " +
+           "WHERE (cr.buyerId = :memberId AND cr.deletedByBuyer = false) OR (cr.sellerId = :memberId AND cr.deletedBySeller = false) " +
            "ORDER BY cr.lastMessageAt DESC")
     List<com.clone.getchu.domain.chat.dto.response.ChatRoomSummaryResponse> findMyChatRoomSummaries(@Param("memberId") Long memberId);
 }

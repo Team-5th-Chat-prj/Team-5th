@@ -71,4 +71,15 @@ public class ChatRoomController {
                 chatMessageService.getMessages(chatRoomId, memberId, cursor, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    /**
+     * DELETE /chat-rooms/{chatRoomId}/leave
+     * 채팅방 나가기 (Soft Delete)
+     */
+    @DeleteMapping("/{chatRoomId}/leave")
+    public ResponseEntity<ApiResponse<Void>> leaveChatRoom(@PathVariable Long chatRoomId) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        chatRoomService.leaveChatRoom(memberId, chatRoomId);
+        return ResponseEntity.ok(ApiResponse.success("채팅방을 성공적으로 나갔습니다.", null));
+    }
 }

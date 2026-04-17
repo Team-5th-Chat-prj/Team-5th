@@ -1,6 +1,8 @@
 package com.clone.getchu.domain.chat.entity;
 
 import com.clone.getchu.global.common.BaseEntity;
+import com.clone.getchu.global.exception.ErrorCode;
+import com.clone.getchu.global.exception.ForbiddenException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -39,6 +41,12 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
+    @Column(name = "deleted_by_buyer", nullable = false)
+    private boolean deletedByBuyer = false;
+
+    @Column(name = "deleted_by_seller", nullable = false)
+    private boolean deletedBySeller = false;
+
     @Builder
     private ChatRoom(Long productId, Long buyerId, Long sellerId) {
         this.productId = productId;
@@ -48,5 +56,32 @@ public class ChatRoom extends BaseEntity {
 
     public void updateLastMessageAt(LocalDateTime lastMessageAt) {
         this.lastMessageAt = lastMessageAt;
+    }
+
+    public void leaveRoom(Long memberId) {
+        if (this.buyerId.equals(memberId)) {
+            this.deletedByBuyer = true;
+        } else if (this.sellerId.equals(memberId)) {
+            this.deletedBySeller = true;
+        } else {
+            throw new ForbiddenException(ErrorCode.CHAT_FORBIDDEN);
+        }
+    }
+
+    public void reenterRoom(Long senderId) {
+        if (this.buyerId.equals(senderId)) {
+            this.deletedByBuyer = false;
+        } else if (this.sellerId.equals(senderId)) {
+            this.deletedBySeller = false;
+        }
+    }
+
+    public boolean isLeftBy(Long memberId) {
+        if (this.buyerId.equals(memberId)) {
+            return this.deletedByBuyer;
+        } else if (this.sellerId.equals(memberId)) {
+            return this.deletedBySeller;
+        }
+        return false;
     }
 }

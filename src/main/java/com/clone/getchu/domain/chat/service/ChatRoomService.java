@@ -6,9 +6,8 @@ import com.clone.getchu.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.clone.getchu.domain.chat.entity.ChatRoom;
 import com.clone.getchu.domain.chat.repository.ChatMessageRepository;
 import com.clone.getchu.domain.chat.repository.ChatRoomRepository;
-import com.clone.getchu.domain.member.entity.Member;
-import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.global.exception.ErrorCode;
+import com.clone.getchu.global.exception.ForbiddenException;
 import com.clone.getchu.global.exception.InvalidRequestException;
 import com.clone.getchu.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +23,6 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final MemberRepository memberRepository;
 
     /**
      * 채팅방 생성 (멱등)
@@ -46,7 +43,11 @@ public class ChatRoomService {
         // 이미 존재하는 채팅방 확인 (멱등)
         Optional<ChatRoom> existingRoom = chatRoomRepository.findByBuyerIdAndProductId(buyerId, request.productId());
         if (existingRoom.isPresent()) {
-            return new ChatRoomResponse(existingRoom.get().getId(), false);
+            ChatRoom room = existingRoom.get();
+            // 구매자가 이전에 방을 나갔을 경우 재입장 처리 후 즉시 DB 반영
+            room.reenterRoom(buyerId);
+            chatRoomRepository.saveAndFlush(room);
+            return new ChatRoomResponse(room.getId(), false);
         }
 
         // 새 채팅방 생성
@@ -77,9 +78,38 @@ public class ChatRoomService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         if (!chatRoom.getBuyerId().equals(memberId) && !chatRoom.getSellerId().equals(memberId)) {
-            throw new com.clone.getchu.global.exception.ForbiddenException(ErrorCode.CHAT_FORBIDDEN);
+            throw new ForbiddenException(ErrorCode.CHAT_FORBIDDEN);
         }
 
         return chatRoom;
+    }
+
+    /**
+     * 채팅방 존재 확인 및 활성 참여자(나가지 않은 상태) 검증
+     * - 메시지 이력 조회, 무한 스크롤, STOMP 구독 등 '읽기' 권한 검증에 사용
+     */
+    @Transactional(readOnly = true)
+    public ChatRoom validateActiveChatRoom(Long chatRoomId, Long memberId) {
+        ChatRoom chatRoom = validateAndGetChatRoom(chatRoomId, memberId);
+
+        if (chatRoom.isLeftBy(memberId)) {
+            throw new ForbiddenException(ErrorCode.CHAT_ALREADY_LEFT);
+        }
+
+        return chatRoom;
+    }
+
+    /**
+     * 채팅방 나가기 (Soft Delete)
+     * - DB에서 삭제하지 않고, 나갔다는 플래그만 변경
+     * - 채팅방 존재 여부만 확인하고, 참여자 권한 검증은 엔티티의 leaveRoom()에 위임
+     * - saveAndFlush()로 영속성 컨텍스트를 즉시 DB에 반영하여 JPQL 쿼리와의 비동기화 방지
+     */
+    @Transactional
+    public void leaveChatRoom(Long memberId, Long chatRoomId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+        chatRoom.leaveRoom(memberId);
+        chatRoomRepository.saveAndFlush(chatRoom); // Soft Delete 플래그 즉시 DB 반영
     }
 }
