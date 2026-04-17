@@ -3,6 +3,7 @@ package com.clone.getchu.domain.trade.service;
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.product.entity.Product;
 import com.clone.getchu.domain.trade.entity.Trade;
+import com.clone.getchu.domain.trade.enums.TradeRole;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.trade.repository.TradeRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -47,7 +48,7 @@ class TradeServiceTest {
         tradeService.updateTradeStatus(1L, TradeStatus.SALE, 1L);
 
         //Then
-        verify(spyTrade).cancel();
+        verify(spyTrade).cancel(any(TradeRole.class));
         assertThat(spyTrade.getStatus()).isEqualTo(TradeStatus.SALE);
     }
 

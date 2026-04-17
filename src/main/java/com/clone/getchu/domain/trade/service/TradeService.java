@@ -47,6 +47,11 @@ public class TradeService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST);
         }
 
+        //상품이 판매중인지 검증
+        if (product.getStatus() != ProductEnum.SALE) {
+            throw new BusinessException(ErrorCode.ALREADY_RESERVED);
+        }
+
         Member buyer = memberRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
 
