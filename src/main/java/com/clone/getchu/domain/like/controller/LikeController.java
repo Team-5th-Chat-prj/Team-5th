@@ -1,5 +1,6 @@
 package com.clone.getchu.domain.like.controller;
 
+import com.clone.getchu.domain.like.service.LikeFacade;
 import com.clone.getchu.domain.like.service.LikeService;
 import com.clone.getchu.domain.product.dto.ProductListResponse;
 import com.clone.getchu.global.common.ApiResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class LikeController {
 
     private final LikeService likeService;
+    private final LikeFacade likeFacade;
 
     //찜하기
     @PostMapping("/products/{productId}/likes")
@@ -26,7 +28,7 @@ public class LikeController {
             @PathVariable Long productId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        likeService.createLike(productId, userDetails.getMemberId());
+        likeFacade.createLike(productId, userDetails.getMemberId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(null));
     }
 
@@ -36,7 +38,7 @@ public class LikeController {
             @PathVariable Long productId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        likeService.deleteLike(productId, userDetails.getMemberId());
+        likeFacade.deleteLike(productId, userDetails.getMemberId());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
