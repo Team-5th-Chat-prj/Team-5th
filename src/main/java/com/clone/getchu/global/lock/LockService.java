@@ -57,6 +57,6 @@ public class LockService {
         }
 
         // 락 획득 실패 시 이미 예약된 상품 예외로 반환 (혹은 timeout으로 간주 불가)
-        throw new BusinessException(ErrorCode.ALREADY_RESERVED);
+        throw new BusinessException(ErrorCode.LOCK_TIMEOUT);
     }
 }
