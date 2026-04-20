@@ -1,5 +1,6 @@
 package com.clone.getchu.domain.like.controller;
 
+import com.clone.getchu.domain.like.service.LikeFacade;
 import com.clone.getchu.domain.like.service.LikeService;
 import com.clone.getchu.domain.product.dto.ProductListResponse;
 import com.clone.getchu.domain.product.entity.ProductEnum;
@@ -39,13 +40,16 @@ class LikeControllerTest extends RestDocsSupport {
     @MockBean
     private LikeService likeService;
 
+    @MockBean
+    private LikeFacade likeFacade;
+
     @Test
     @DisplayName("찜하기 - POST /products/{productId}/likes")
     @WithMockCustomUser
     void createLike() throws Exception {
         // given
         Long productId = 1L;
-        doNothing().when(likeService).createLike(anyLong(), anyLong());
+        doNothing().when(likeFacade).createLike(anyLong(), anyLong());
 
         // when & then
         mockMvc.perform(post("/products/{productId}/likes", productId)
@@ -81,7 +85,7 @@ class LikeControllerTest extends RestDocsSupport {
     void deleteLike() throws Exception {
         // given
         Long productId = 1L;
-        doNothing().when(likeService).deleteLike(anyLong(), anyLong());
+        doNothing().when(likeFacade).deleteLike(anyLong(), anyLong());
 
         // when & then
         mockMvc.perform(delete("/products/{productId}/likes", productId)
