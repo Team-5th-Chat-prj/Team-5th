@@ -20,7 +20,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE likes SET is_delete = ture WHERE id = ?") // 삭제 시 업데이트로 변경
-@Where(clause = "is_deletee = false") // 조회 시 삭제 안 된 것만 필터링
+@Where(clause = "is_delete = false") // 조회 시 삭제 안 된 것만 필터링
 public class Like extends BaseEntity {
 
     @Id
