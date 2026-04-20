@@ -28,11 +28,11 @@ public class LikeService {
 
     @Transactional
     public void createLike(Long productId, Long memberId) {
-        //이미 찜 데이터가 있는지 확인
-        Optional<Like> existingLike = likeRepository.findByProductIdAndMemberIdIncludingDeleted(productId, memberId);
+        //삭제된 이력 포함해서 전체 데이터 조회
+        Like like = likeRepository.findByProductIdAndMemberIdIncludingDeleted(productId, memberId)
+                .orElse(null);
 
-        if (existingLike.isPresent()) {
-            Like like = existingLike.get();
+        if (like != null) {
             if (!like.isDeleted()) {
                 throw new BusinessException(ErrorCode.LIKE_ALREADY_EXISTS);
             }
