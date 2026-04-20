@@ -42,4 +42,8 @@ public class Like extends BaseEntity {
         this.product = product;
         this.member = member;
     }
+
+    public void restore() {
+        this.isDeleted = false;
+    }
 }
