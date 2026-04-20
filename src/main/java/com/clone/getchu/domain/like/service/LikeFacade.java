@@ -14,7 +14,7 @@ public class LikeFacade {
 
     //찜하기
     public void createLike(Long productId, Long memberId) {
-        String lockKey = "lock:like:"+productId + ":" +memberId;
+        String lockKey = "lock:product:"+productId;
 
         lockService.executeWithLock(lockKey, () -> {
             likeService.createLike(productId, memberId);
@@ -24,7 +24,7 @@ public class LikeFacade {
 
     //찜삭제
     public void deleteLike(Long productId, Long memberId){
-        String lockKey = "lock:like:"+productId + ":" +memberId;
+        String lockKey = "lock:product:"+productId;
 
         lockService.executeWithLock(lockKey, () -> {
             likeService.deleteLike(productId, memberId);
