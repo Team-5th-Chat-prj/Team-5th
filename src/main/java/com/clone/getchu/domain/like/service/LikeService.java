@@ -29,17 +29,17 @@ public class LikeService {
     @Transactional
     public void createLike(Long productId, Long memberId) {
         //이미 찜 데이터가 있는지 확인
-        Optional<Like> existingLike = likeRepository.findByProductIdAndMemberId(productId, memberId);
+        Optional<Like> existingLike = likeRepository.findByProductIdAndMemberIdIncludingDeleted(productId, memberId);
 
         if (existingLike.isPresent()) {
             Like like = existingLike.get();
             if (!like.isDeleted()) {
                 throw new BusinessException(ErrorCode.LIKE_ALREADY_EXISTS);
             }
-            //소프트 딜리트된 상태라면 다시 활성화 (Restore)
+            //이전에 취소한 이력이 있다면 다시 활성화
             like.restore();
         } else {
-            //처음 찜하는 경우 데이터 생성
+            //처음 찜하는 경우
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
             Member member = memberRepository.findById(memberId)
@@ -53,12 +53,11 @@ public class LikeService {
 
     @Transactional
     public void deleteLike(Long productId, Long memberId) {
-        Like like = likeRepository.findByProductIdAndMemberId(productId, memberId)
+        Like like = likeRepository.findByProductIdAndMemberIdIncludingDeleted(productId, memberId)
                 .filter(l -> !l.isDeleted())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.LIKE_NOT_FOUND));
 
-        // JPA 레포지토리의 delete 호출 -> 엔티티의 @SQLDelete 작동
-        likeRepository.delete(like);
+        like.softDelete();
 
         // 테이블의 likeCount 감소
         likeRepository.decrementLikeCount(productId);

@@ -46,4 +46,8 @@ public class Like extends BaseEntity {
     public void restore() {
         this.isDeleted = false;
     }
+
+    public void softDelete() {
+        this.isDeleted = true;
+    }
 }
