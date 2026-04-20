@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface LikeRepository extends JpaRepository<Like, Long> {
 
     // 찜 여부 확인 (소프트 딜리트 포함 여부에 따라 Optional로 반환)
-    @Query(value = "SELECT * FROM Like l WHERE l.product.id = :productId AND l.member.id = :memberId", nativeQuery = true)
+    @Query(value = "SELECT * FROM likes l WHERE l.product.id = :productId AND l.member.id = :memberId", nativeQuery = true)
     Optional<Like> findByProductIdAndMemberIdIncludingDeleted(@Param("productId") Long productId, @Param("memberId") Long memberId);
 
     // 내 찜 목록 페이징 조회 (Like 엔티티 내 @Where(clause = "is_deleted = false")가 적용되어 있어야 함)
