@@ -36,7 +36,7 @@ public class ChatRoomService {
     public ChatRoomResponse createOrGetChatRoom(Long buyerId, CreateChatRoomRequest request) {
         // Product 조회하여 실제 sellerId 추출
         Product product = productRepository.findById(request.productId())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND)); // 글로벌 에러코드에 PRODUCT_NOT_FOUND가 없다면 NotFoundException 대신 상위 에러 던지기 권장하지만, NotFoundException 은 보통 에러코드를 받습니다.
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
         Long sellerId = product.getSeller().getId();
 
         // 본인 상품 채팅 시도 방지
