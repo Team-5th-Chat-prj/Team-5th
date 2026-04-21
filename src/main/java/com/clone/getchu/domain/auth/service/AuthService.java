@@ -59,12 +59,13 @@ public class AuthService {
         try {
             return SignupResponse.from(memberRepository.save(member));
         } catch (DataIntegrityViolationException e) {
-            // 동시성 경쟁으로 락+사전 체크 통과 후 DB 제약조건 위반 시 재확인
-            if (memberRepository.existsByNickname(request.nickname()))
+            // 추가 DB 조회 없이 예외 메시지로 위반된 제약조건을 판별
+            // 회원가입의 unique 제약은 email·nickname 둘뿐이므로 닉네임이 아니면 이메일 충돌
+            String msg = e.getMostSpecificCause().getMessage();
+            if (msg != null && msg.contains("uk_member_nickname")) {
                 throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
-            if (memberRepository.existsByEmail(request.email()))
-                throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
-            throw e; // 예상치 못한 제약조건 위반은 원본 예외 전파
+            }
+            throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
         }
     }
 

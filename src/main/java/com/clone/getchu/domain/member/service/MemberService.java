@@ -14,16 +14,26 @@ import com.clone.getchu.global.security.CustomUserDetails;
 import com.clone.getchu.global.util.RedisKeyConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberService {
+    // 내 UUID와 일치할 때만 삭제 — TTL 초과 후 다른 스레드가 획득한 락을 실수로 해제하는 것을 방지
+    private static final RedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+            Long.class
+    );
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate stringRedisTemplate;
@@ -51,16 +61,19 @@ public class MemberService {
      * 닉네임 사용 가능 여부 검증 (Lettuce SETNX 락 + DB 중복 체크)
      *
      * - nickname이 null이거나 현재 닉네임과 동일하면 검증 생략
-     * - SETNX로 락 획득 실패 시: 다른 요청이 같은 닉네임을 처리 중 → 409
-     * - 락 획득 후 DB 중복 확인 → 409
+     * - SETNX 실패: 다른 스레드가 동일 닉네임을 처리 중 → 409
+     * - 락 값에 UUID 사용: TTL 초과 후 다른 스레드가 재획득한 락을 실수로 해제하는 것을 방지
+     * - Lua 스크립트로 "UUID 확인 + 삭제"를 원자적으로 처리
      * - 락은 check 범위만 보호. save 이후는 DB unique constraint가 최종 방어선.
      */
     public void validateNicknameAvailable(String nickname, String currentNickname) {
         if (nickname == null || nickname.equals(currentNickname)) return;
 
         String lockKey = RedisKeyConstants.nicknameLockKey(nickname);
+        String lockValue = UUID.randomUUID().toString();
+
         Boolean acquired = stringRedisTemplate.opsForValue()
-                .setIfAbsent(lockKey, "1", 5, TimeUnit.SECONDS);
+                .setIfAbsent(lockKey, lockValue, 5, TimeUnit.SECONDS);
         if (!Boolean.TRUE.equals(acquired)) {
             throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
         }
@@ -69,7 +82,8 @@ public class MemberService {
                 throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
             }
         } finally {
-            stringRedisTemplate.delete(lockKey);
+            // 내 UUID와 일치할 때만 삭제 (원자적 실행)
+            stringRedisTemplate.execute(UNLOCK_SCRIPT, List.of(lockKey), lockValue);
         }
     }
 
