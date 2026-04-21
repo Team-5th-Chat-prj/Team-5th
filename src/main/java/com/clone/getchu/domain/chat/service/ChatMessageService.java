@@ -91,4 +91,24 @@ public class ChatMessageService {
 
         return new CursorPageResponse<>(content, nextCursor, hasNext);
     }
+
+    /**
+     * 채팅방 입장 시 메시지 읽음 처리
+     */
+    @Transactional
+    public void markMessagesAsRead(Long chatRoomId, Long memberId) {
+        // 채팅방 존재 + 참여자 검증 (권한 확인용)
+        chatRoomService.validateActiveChatRoom(chatRoomId, memberId);
+
+        // 읽지 않은 상대방의 메시지들만 읽음 처리
+        chatMessageRepository.markMessagesAsRead(chatRoomId, memberId);
+
+        // 실시간으로 '1'을 없애기 위한 읽음 이벤트 브로드캐스트 (카카오톡 방식)
+        java.util.Map<String, Object> readEvent = new java.util.HashMap<>();
+        readEvent.put("type", "READ");
+        readEvent.put("chatRoomId", chatRoomId);
+        readEvent.put("readerId", memberId);
+
+        messagingTemplate.convertAndSend("/topic/room." + chatRoomId, readEvent);
+    }
 }

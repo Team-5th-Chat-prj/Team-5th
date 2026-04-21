@@ -82,4 +82,15 @@ public class ChatRoomController {
         chatRoomService.leaveChatRoom(memberId, chatRoomId);
         return ResponseEntity.ok(ApiResponse.success("채팅방을 성공적으로 나갔습니다.", null));
     }
+
+    /**
+     * PATCH /chat-rooms/{chatRoomId}/read
+     * 채팅방 입장 시 읽지 않은 메시지 읽음 처리
+     */
+    @PatchMapping("/{chatRoomId}/read")
+    public ResponseEntity<ApiResponse<Void>> markMessagesAsRead(@PathVariable Long chatRoomId) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        chatMessageService.markMessagesAsRead(chatRoomId, memberId);
+        return ResponseEntity.ok(ApiResponse.success("메시지를 읽음 처리했습니다.", null));
+    }
 }
