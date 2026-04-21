@@ -1,6 +1,6 @@
 # 05. ERD (Entity Relationship Diagram)
 
-> **버전**: v1.2
+> **버전**: v2.0
 > **표기법**: Mermaid ERD
 >
 > **개념 정의**: `PRODUCT` = 중고 판매글(Listing). 카탈로그 상품이 아님. 판매자가 올린 "이 물건을 팝니다" 게시글 1건 = PRODUCT 1건.
@@ -15,12 +15,14 @@ erDiagram
         bigint id PK
         varchar email UK
         varchar password
-        varchar nickname
-        float average_rating
+        varchar nickname UK
+        decimal average_rating "DECIMAL(2,1)"
         int review_count
+        text profile_image_url
+        varchar role "USER / ADMIN"
+        boolean deleted "Soft Delete"
         datetime created_at
         datetime updated_at
-        boolean is_deleted
     }
 
     CATEGORY {
@@ -33,49 +35,54 @@ erDiagram
         bigint seller_id FK
         bigint category_id FK
         varchar title
-        varchar description
+        text description
         int price
-        varchar status
-        int like_count
+        varchar status "SALE / RESERVED / SOLD_OUT"
+        int like_count "비정규화"
+        boolean is_deleted "Soft Delete"
         datetime created_at
         datetime updated_at
-        boolean is_deleted
     }
 
     PRODUCT_IMAGE {
         bigint id PK
         bigint product_id FK
         varchar image_url
-        int sort_order
+        datetime created_at
+        datetime updated_at
     }
 
     TRADE {
-        bigint id PK
+        bigint trade_id PK
         bigint product_id FK
         bigint buyer_id FK
         bigint seller_id FK
-        varchar status
+        varchar status "SALE / RESERVED / TRADING / SOLD / REVIEWED"
         datetime reserved_at
         datetime traded_at
         datetime sold_at
         datetime created_at
+        datetime updated_at
     }
 
     REVIEW {
         bigint id PK
-        bigint trade_id FK
+        bigint trade_id FK "UK"
         bigint reviewer_id FK
         bigint reviewee_id FK
-        int rating
-        varchar content
+        decimal rating "DECIMAL(2,1), 0.5~5.0"
+        varchar content "max 500"
         datetime created_at
+        datetime updated_at
     }
 
-    LIKE {
+    LIKES {
         bigint id PK
-        bigint member_id FK
         bigint product_id FK
+        bigint member_id FK
+        boolean is_deleted "Soft Delete"
         datetime created_at
+        datetime updated_at
     }
 
     CHAT_ROOM {
@@ -83,29 +90,27 @@ erDiagram
         bigint product_id FK
         bigint buyer_id FK
         bigint seller_id FK
-        datetime created_at
         datetime last_message_at
+        boolean deleted_by_buyer
+        boolean deleted_by_seller
+        datetime created_at
+        datetime updated_at
     }
 
     CHAT_MESSAGE {
         bigint id PK
         bigint chat_room_id FK
         bigint sender_id FK
-        varchar content
+        varchar sender_nickname
+        varchar content "max 1000"
         boolean is_read
         datetime created_at
-    }
-
-    KEYWORD_LOG {
-        bigint id PK
-        varchar keyword
-        int count
-        date log_date
+        datetime updated_at
     }
 
     MEMBER ||--o{ PRODUCT : sells
     MEMBER ||--o{ TRADE : buys
-    MEMBER ||--o{ LIKE : likes
+    MEMBER ||--o{ LIKES : likes
     MEMBER ||--o{ REVIEW : writes
     MEMBER ||--o{ REVIEW : receives
     MEMBER ||--o{ CHAT_ROOM : buyer_rooms
@@ -116,7 +121,7 @@ erDiagram
 
     PRODUCT ||--o{ PRODUCT_IMAGE : has
     PRODUCT ||--o{ TRADE : records
-    PRODUCT ||--o{ LIKE : receives
+    PRODUCT ||--o{ LIKES : receives
     PRODUCT ||--o{ CHAT_ROOM : has
 
     TRADE ||--o| REVIEW : has
@@ -129,6 +134,7 @@ erDiagram
 - TRADE는 PRODUCT와 1:N 관계로 보며, 취소 후 재거래를 허용한다.
 - REVIEW는 거래당 1건만 허용한다.
 - CHAT_ROOM은 구매자가 상품 상세에서 채팅하기를 눌렀을 때 생성된다.
+- 인기 검색어는 Redis Sorted Set으로 관리하며, DB 테이블 없음.
 ---
 
 ## 2. 설계 결정 사항
@@ -139,7 +145,7 @@ PRODUCT는 상품 카탈로그(e-커머스의 SKU)가 아니다.
 **판매자가 "이 물건을 팝니다"라고 올린 게시글 1건 = PRODUCT 1건**이다.
 
 - 같은 모델의 아이폰을 2대 팔려면 → PRODUCT 2건 등록
-- PRODUCT가 삭제(DELETED)되면 해당 판매글이 비공개 처리됨
+- PRODUCT가 삭제(is_deleted=true)되면 해당 판매글이 비공개 처리됨
 - PRODUCT.status는 "판매글의 공개/거래 상태", TRADE.status는 "실제 거래 진행 상태"로 역할이 다름
 
 ---
@@ -148,13 +154,32 @@ PRODUCT는 상품 카탈로그(e-커머스의 SKU)가 아니다.
 
 | 상태 컬럼 | 역할 | 값 |
 |-----------|------|-----|
-| `PRODUCT.status` | 판매글 공개 상태 — 목록 노출 여부 제어 | SALE / RESERVED / TRADING / SOLD / REVIEWED / DELETED |
-| `TRADE.status` | 거래 진행 상태 — 거래 이력 관리 | RESERVED / TRADING / SOLD / REVIEWED / CANCELLED |
+| `PRODUCT.status` | 판매글 공개 상태 — 목록 노출 여부 제어 | `SALE` / `RESERVED` / `SOLD_OUT` |
+| `TRADE.status` | 거래 진행 상태 — 거래 이력 관리 | `SALE` / `RESERVED` / `TRADING` / `SOLD` / `REVIEWED` |
+
+**상태 전이 흐름**:
+```
+TRADE.status:  SALE → RESERVED → TRADING → SOLD → REVIEWED
+                      ↑ (cancel) ↓    ↑ (cancel) ↓
+                        SALE              SALE
+
+PRODUCT.status: SALE ←→ RESERVED → SOLD_OUT
+```
 
 **왜 두 곳에 상태가 있는가?**
 - PRODUCT.status가 없으면 목록 조회 시 매번 TRADE JOIN 필요 → 성능 저하
 - TRADE.status가 없으면 취소 이력, 리뷰 연결 기준점 없음
 - 두 상태는 항상 동기화되어야 하며, `TradeService` 내에서 한 트랜잭션으로 함께 변경
+
+**거래 상태 전이 권한**:
+
+| 전이 | 권한 |
+|------|------|
+| SALE → RESERVED | 구매자 (예약 요청) |
+| RESERVED → TRADING | **판매자**만 가능 |
+| TRADING → SOLD | **구매자**만 가능 |
+| RESERVED/TRADING → SALE (취소) | 판매자, 구매자 모두 가능 |
+| SOLD → REVIEWED | 구매자 (리뷰 작성) |
 
 ---
 
@@ -187,6 +212,8 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 **왜 예약 전 채팅을 허용하는가?**
 실제 중고거래에서 "아직 판매 중인가요?", "직거래 가능한가요?" 확인 없이 예약 버튼부터 누르는 사람은 없다. 채팅을 예약 이후로 제한하면 UX가 현실과 맞지 않는다.
 
+**채팅방 나가기**: 양측 독립적 Soft Delete (`deleted_by_buyer`, `deleted_by_seller`)로 구현. 상대방이 메시지를 보내면 자동 재진입.
+
 ---
 
 ### 2-4. TRADE 테이블 분리 이유
@@ -198,12 +225,13 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 
 ---
 
-### 2-5. LIKE.like_count 비정규화
+### 2-5. LIKES.like_count 비정규화
 
 - PRODUCT 테이블에 `like_count` 컬럼을 두어 목록 조회 시 JOIN 없이 찜 수 표시
 - 정합성 허용 오차 ±1 수준 (실시간 정확도 불필요)
-- 증가: `UPDATE product SET like_count = like_count + 1 WHERE id = ?`
-- **구현 정책**: `ProductRepository.incrementLikeCount()` / `decrementLikeCount()` 형태의 **JPQL 벌크 업데이트** 사용. JPA dirty checking으로 엔티티를 읽어 수정하면 lost update 위험이 있으므로 금지
+- **구현 정책**: `LikeRepository.incrementLikeCount()` / `decrementLikeCount()` 형태의 **JPQL 벌크 업데이트** 사용. JPA dirty checking으로 엔티티를 읽어 수정하면 lost update 위험이 있으므로 금지
+- **LIKES Soft Delete**: `@SQLDelete`로 DELETE 시 `is_deleted = true`로 변경, `@Where(clause = "is_deleted = false")`로 조회 필터링. 재찜 시 `restore()`로 `is_deleted = false` 복원
+- **동시성 제어**: `LikeFacade`에서 Redisson 분산락으로 중복 찜/취소 방지
 
 ### 2-5-1. MEMBER.review_count 비정규화
 
@@ -228,15 +256,16 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 - Redis Pub/Sub이 아닌 MySQL 영속 저장
 - 이유: 재연결 시 이전 메시지 조회, 거래 증거 보존
 - 인덱스: `(chat_room_id, id DESC)` — 최신 메시지 빠른 조회
+- `sender_nickname` 비정규화: 메시지 조회 시 Member JOIN 제거
 
 ---
 
-### 2-8. KEYWORD_LOG 설계
+### 2-8. 인기 검색어 설계 (Redis 기반)
 
-- 검색 요청마다 `KEYWORD_LOG`에 **순수 INSERT 방식**으로 1건 적재 (`count = 1`)
-- 스케줄러가 10분마다 최근 7일 데이터를 `SUM(count) GROUP BY keyword`로 집계 → TOP 10 인기 검색어 Caffeine 캐시 갱신
-- 동시 검색 상황에서도 upsert 충돌 없이 append-only 로그처럼 안전하게 적재 가능
-- `log_date` 컬럼으로 7일 이전 데이터 주기적 삭제 가능
+- **Redis Sorted Set** (`search:popular:keywords`)을 사용하여 검색어 점수를 실시간 관리
+- 검색 요청마다 `ZINCRBY` 명령으로 해당 키워드 점수 +1
+- 스케줄러 + Caffeine 캐시로 TOP 10 인기 검색어 주기적 갱신
+- DB 테이블(KEYWORD_LOG) 없이 Redis만으로 처리 — 쓰기 부하 최소화
 
 ---
 
@@ -250,8 +279,8 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 | PRODUCT | `FULLTEXT(title)` | 키워드 검색 (LIKE → FULLTEXT ngram) |
 | TRADE | `(product_id, status)` | 활성 거래 존재 여부 확인 (UK 대체) |
 | TRADE | `(buyer_id)` | 구매 이력 조회 |
-| LIKE | `UNIQUE(member_id, product_id)` | 중복 방지 + 찜 여부 조회 |
+| LIKES | `UNIQUE(product_id, member_id)` | 중복 방지 + 찜 여부 조회 |
 | CHAT_ROOM | `UNIQUE(buyer_id, product_id)` | 동일 채팅방 중복 생성 방지 |
 | CHAT_ROOM | `(seller_id)` | 판매자 기준 채팅방 목록 조회 최적화 |
 | CHAT_MESSAGE | `(chat_room_id, id DESC)` | 채팅 이력 최신순 |
-| KEYWORD_LOG | `(keyword, log_date)` | 인기 검색어 집계 |
+| REVIEW | `(reviewee_id, id)` | 받은 리뷰 목록 조회 |
