@@ -32,7 +32,7 @@ public record SignupRequest(
 
         // 프로필 이미지 URL (선택, null 허용)
         // 미입력 시 프론트에서 기본 이미지 표시
-        @Pattern(regexp = "^(https?://.*)?$", message = "올바른 URL 형식이어야 합니다.")
+//        @Pattern(regexp = "^(https?://.*)?$", message = "올바른 URL 형식이어야 합니다.")
         String profileImageUrl
 
 ) {}

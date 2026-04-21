@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record GetAllTradeResponse (
         Long tradeId,
         String productTitle,
+        Long productId,
         Integer price,
         TradeStatus status,
         LocalDateTime updatedAt //상태가 마지막으로 변경된 날짜
@@ -16,6 +17,7 @@ public record GetAllTradeResponse (
         return new GetAllTradeResponse(
                 trade.getId(),
                 trade.getProduct().getTitle(),
+                trade.getProduct().getId(),
                 trade.getProduct().getPrice(),
                 trade.getStatus(),
                 trade.getUpdatedAt()

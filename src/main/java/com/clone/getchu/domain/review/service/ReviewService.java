@@ -7,6 +7,7 @@ import com.clone.getchu.domain.review.dto.response.ReviewResponse;
 import com.clone.getchu.domain.review.entity.Review;
 import com.clone.getchu.domain.review.repository.ReviewRepository;
 import com.clone.getchu.domain.trade.entity.Trade;
+import com.clone.getchu.domain.trade.enums.TradeRole;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.trade.repository.TradeRepository;
 import com.clone.getchu.global.common.CursorPageResponse;
@@ -72,6 +73,7 @@ public class ReviewService {
         );
         reviewRepository.save(review);
         seller.updateReviewStats(request.rating());
+        trade.proceed(TradeRole.BUYER); // SOLD → REVIEWED
     }
 
     /**
