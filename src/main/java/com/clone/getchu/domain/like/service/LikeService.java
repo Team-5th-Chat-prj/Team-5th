@@ -34,7 +34,8 @@ public class LikeService {
 
         if (like != null) {
             if (!like.isDeleted()) {
-                throw new BusinessException(ErrorCode.LIKE_ALREADY_EXISTS);
+                // 이미 찜한 상태라면 카운트를 증가시키지 않고 무시 (멱등성 보장)
+                return;
             }
             //이전에 취소한 이력이 있다면 다시 활성화
             like.restore();
