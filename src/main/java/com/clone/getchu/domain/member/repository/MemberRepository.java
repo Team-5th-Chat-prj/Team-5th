@@ -17,6 +17,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 회원가입 시 이메일 중복 체크
     boolean existsByEmail(String email);
 
+    // 닉네임 중복 체크
+    boolean existsByNickname(String nickname);
+
     // 리뷰 평점 통계 업데이트 시 동시성 보호 — 비관적 쓰기 락
     // 같은 판매자에게 리뷰가 동시에 작성될 경우 Lost Update 방지
     @Lock(LockModeType.PESSIMISTIC_WRITE)

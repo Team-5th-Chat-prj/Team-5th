@@ -6,6 +6,7 @@ import com.clone.getchu.domain.member.dto.response.MemberProfileResponse;
 import com.clone.getchu.domain.member.dto.response.MemberResponse;
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
+import com.clone.getchu.global.exception.ConflictException;
 import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.InvalidRequestException;
 import com.clone.getchu.global.exception.NotFoundException;
@@ -34,6 +35,13 @@ public class MemberService {
     public MemberResponse update(CustomUserDetails userDetails, MemberUpdateRequest request) {
         Member member = memberRepository.findById(userDetails.getMemberId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 닉네임을 변경하는 경우에만 중복 체크 (자기 자신의 현재 닉네임은 허용)
+        if (request.nickname() != null && !request.nickname().equals(member.getNickname())
+                && memberRepository.existsByNickname(request.nickname())) {
+            throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
         member.update(request.nickname(), request.profileImageUrl());
         return MemberResponse.from(member);
     }

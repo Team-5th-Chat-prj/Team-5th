@@ -12,7 +12,12 @@ import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 @Entity
-@Table(name = "members")
+@Table(
+        name = "members",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_member_nickname", columnNames = "nickname")
+        }
+)
 @SQLRestriction("deleted = false")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter

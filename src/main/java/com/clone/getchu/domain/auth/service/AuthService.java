@@ -44,18 +44,24 @@ public class AuthService {
         if (memberRepository.existsByEmail(request.email())) {
             throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
         }
+        if (memberRepository.existsByNickname(request.nickname())) {
+            throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
+        }
 
         Member member = Member.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .nickname(request.nickname())
-                .profileImageUrl(request.profileImageUrl()) // 추가
+                .profileImageUrl(request.profileImageUrl())
                 .build();
 
         try {
             return SignupResponse.from(memberRepository.save(member));
         } catch (DataIntegrityViolationException e) {
-            // DB Unique 제약조건 위반 시 발생 (동시성 제어의 최후 방어선)
+            // 동시성 경쟁으로 사전 체크 통과 후 DB 제약조건 위반 시 재확인
+            if (memberRepository.existsByNickname(request.nickname())) {
+                throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
+            }
             throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
         }
     }
