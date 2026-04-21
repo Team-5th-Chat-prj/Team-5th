@@ -25,12 +25,12 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     Page<Like> findAllByMemberId(Long memberId, Pageable pageable);
 
     //상품의 찜 수 증가
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE Product p SET p.likeCount = p.likeCount + 1 WHERE p.id = :productId")
-    void incrementLikeCount(@Param("productId") Long productId);
+//    @Modifying(clearAutomatically = true)
+//    @Query("UPDATE Product p SET p.likeCount = p.likeCount + 1 WHERE p.id = :productId")
+//    void incrementLikeCount(@Param("productId") Long productId);
 
     //상품의 찜 수 감소
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE Product p SET p.likeCount = p.likeCount - 1 WHERE p.id = :productId AND p.likeCount > 0")
-    void decrementLikeCount(@Param("productId") Long productId);
+//    @Modifying(clearAutomatically = true)
+//    @Query("UPDATE Product p SET p.likeCount = p.likeCount - 1 WHERE p.id = :productId AND p.likeCount > 0")
+//    void decrementLikeCount(@Param("productId") Long productId);
 }
