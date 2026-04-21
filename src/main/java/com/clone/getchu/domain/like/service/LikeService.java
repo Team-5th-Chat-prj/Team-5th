@@ -28,28 +28,28 @@ public class LikeService {
 
     @Transactional
     public void createLike(Long productId, Long memberId) {
+        //상품 조회
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
+
         //삭제된 이력 포함해서 전체 데이터 조회
         Like like = likeRepository.findByProductIdAndMemberIdIncludingDeleted(productId, memberId)
                 .orElse(null);
 
         if (like != null) {
-            if (!like.isDeleted()) {
-                // 이미 찜한 상태라면 카운트를 증가시키지 않고 무시 (멱등성 보장)
-                return;
-            }
+            if (!like.isDeleted()) return;
             //이전에 취소한 이력이 있다면 다시 활성화
             like.restore();
         } else {
             //처음 찜하는 경우
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
             Member member = memberRepository.findById(memberId)
                     .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
 
             likeRepository.save(new Like(product, member));
         }
 
-        likeRepository.incrementLikeCount(productId);
+        //객체 필드값을 직접 수정 (Dirty Checking) - 별도의 쿼리 호출 없이도 트랜잭션 종료 시 DB와 일치됨
+        product.incrementLikeCount();
     }
 
     @Transactional
@@ -60,8 +60,7 @@ public class LikeService {
 
         like.softDelete();
 
-        // 테이블의 likeCount 감소
-        likeRepository.decrementLikeCount(productId);
+        like.getProduct().decrementLikeCount();
     }
 
     @Transactional(readOnly = true)
