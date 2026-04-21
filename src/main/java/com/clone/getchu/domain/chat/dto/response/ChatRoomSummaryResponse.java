@@ -5,6 +5,7 @@ public record ChatRoomSummaryResponse(
         Long opponentId,
         String opponentNickname,
         Long productId,
+        String opponentProfileImageUrl,
         String lastMessage,
         long unreadCount
 ) {

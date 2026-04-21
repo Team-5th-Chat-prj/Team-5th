@@ -46,6 +46,7 @@ public class ChatRoomService {
             ChatRoom room = existingRoom.get();
             // 구매자가 이전에 방을 나갔을 경우 재입장 처리 후 즉시 DB 반영
             room.reenterRoom(buyerId);
+            room.reenterRoom(sellerId);
             chatRoomRepository.saveAndFlush(room);
             return new ChatRoomResponse(room.getId(), false);
         }

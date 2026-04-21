@@ -1,5 +1,8 @@
 server:
   port: 8080
+  tomcat:
+    max-http-form-post-size: 50MB
+    max-swallow-size: 50MB
 
 spring:
   application:
@@ -17,10 +20,22 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        defer-datasource-initialization: true
+        sql:
+          init:
+            mode: always
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  mvc:
+    async:
+      request-timeout: 30000
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+
 jwt:
   secret-key: ${JWT_SECRET_KEY}
   access-expiration-time: ${JWT_ACCESS_EXPIRATION_TIME:900000}      # 15분

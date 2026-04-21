@@ -19,7 +19,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     // 채팅방 목록 최적화 조회 (N+1 해결)
     @Query("SELECT new com.clone.getchu.domain.chat.dto.response.ChatRoomSummaryResponse(" +
            "cr.id, CASE WHEN cr.buyerId = :memberId THEN cr.sellerId ELSE cr.buyerId END, " +
-           "COALESCE(m.nickname, '탈퇴한 회원'), cr.productId, " +
+           "COALESCE(m.nickname, '탈퇴한 회원'), cr.productId, m.profileImageUrl, " +
            "(SELECT cm.content FROM ChatMessage cm WHERE cm.id = (SELECT MAX(cm2.id) FROM ChatMessage cm2 WHERE cm2.chatRoomId = cr.id)), " +
            "(SELECT COUNT(cm2) FROM ChatMessage cm2 WHERE cm2.chatRoomId = cr.id AND cm2.senderId <> :memberId AND cm2.isRead = false)" +
            ") " +

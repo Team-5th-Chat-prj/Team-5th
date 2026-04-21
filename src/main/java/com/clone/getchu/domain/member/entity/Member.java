@@ -38,6 +38,7 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private int reviewCount = 0;
 
+    @Column(name = "profile_image_url", columnDefinition = "TEXT")
     private String profileImageUrl;
     // 회원 권한 (현재 USER 단일값, 추후 ADMIN 확장 가능)
     @Enumerated(EnumType.STRING)
