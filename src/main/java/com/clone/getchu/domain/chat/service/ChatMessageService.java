@@ -104,10 +104,8 @@ public class ChatMessageService {
         chatMessageRepository.markMessagesAsRead(chatRoomId, memberId);
 
         // 실시간으로 '1'을 없애기 위한 읽음 이벤트 브로드캐스트 (카카오톡 방식)
-        java.util.Map<String, Object> readEvent = new java.util.HashMap<>();
-        readEvent.put("type", "READ");
-        readEvent.put("chatRoomId", chatRoomId);
-        readEvent.put("readerId", memberId);
+        com.clone.getchu.domain.chat.dto.response.ChatMessageReadEvent readEvent = 
+                com.clone.getchu.domain.chat.dto.response.ChatMessageReadEvent.of(chatRoomId, memberId);
 
         messagingTemplate.convertAndSend("/topic/room." + chatRoomId, readEvent);
     }

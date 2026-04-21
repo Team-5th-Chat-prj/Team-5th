@@ -36,7 +36,7 @@ public class ChatRoomController {
             @Valid @RequestBody CreateChatRoomRequest request
     ) {
         Long buyerId = SecurityUtil.getCurrentMemberId();
-        ChatRoomResponse response = chatRoomService.createOrGetChatRoom(buyerId, request.sellerId(), request);
+        ChatRoomResponse response = chatRoomService.createOrGetChatRoom(buyerId, request);
 
         if (response.created()) {
             return ResponseEntity.status(HttpStatus.CREATED)

@@ -6,6 +6,8 @@ import com.clone.getchu.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.clone.getchu.domain.chat.entity.ChatRoom;
 import com.clone.getchu.domain.chat.repository.ChatMessageRepository;
 import com.clone.getchu.domain.chat.repository.ChatRoomRepository;
+import com.clone.getchu.domain.product.entity.Product;
+import com.clone.getchu.domain.product.repository.ProductRepository;
 import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.ForbiddenException;
 import com.clone.getchu.global.exception.InvalidRequestException;
@@ -23,18 +25,20 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final ProductRepository productRepository;
 
     /**
      * 채팅방 생성 (멱등)
      * - 동일 (buyerId, productId) 채팅방이 이미 존재하면 기존 채팅방 반환 (created=false)
      * - 없으면 새로 생성 (created=true)
-     *
-     * NOTE: Product 도메인이 없으므로 현재 sellerId를 요청자가 직접 전달하지 않음.
-     *       Product 도메인 완성 시 productRepository로 sellerId 조회 후 자동 주입.
-     *       임시로 productId를 sellerId로 사용하는 구조 대신, sellerId를 request에 포함.
      */
     @Transactional
-    public ChatRoomResponse createOrGetChatRoom(Long buyerId, Long sellerId, CreateChatRoomRequest request) {
+    public ChatRoomResponse createOrGetChatRoom(Long buyerId, CreateChatRoomRequest request) {
+        // Product 조회하여 실제 sellerId 추출
+        Product product = productRepository.findById(request.productId())
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND)); // 글로벌 에러코드에 PRODUCT_NOT_FOUND가 없다면 NotFoundException 대신 상위 에러 던지기 권장하지만, NotFoundException 은 보통 에러코드를 받습니다.
+        Long sellerId = product.getSeller().getId();
+
         // 본인 상품 채팅 시도 방지
         if (buyerId.equals(sellerId)) {
             throw new InvalidRequestException(ErrorCode.SELF_CHAT);
