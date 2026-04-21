@@ -7,6 +7,7 @@ import com.clone.getchu.domain.auth.dto.SignupRequest;
 import com.clone.getchu.domain.auth.dto.SignupResponse;
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
+import com.clone.getchu.domain.member.service.MemberService;
 import com.clone.getchu.global.exception.ConflictException;
 import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.NotFoundException;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class AuthService {
 
     private final MemberRepository memberRepository;
+    private final MemberService memberService;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final StringRedisTemplate stringRedisTemplate;
@@ -44,9 +46,8 @@ public class AuthService {
         if (memberRepository.existsByEmail(request.email())) {
             throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
         }
-        if (memberRepository.existsByNickname(request.nickname())) {
-            throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
-        }
+        // 닉네임 중복 체크 + Lettuce SETNX 락 (공통 검증 위임)
+        memberService.validateNicknameAvailable(request.nickname(), null);
 
         Member member = Member.builder()
                 .email(request.email())
@@ -58,11 +59,12 @@ public class AuthService {
         try {
             return SignupResponse.from(memberRepository.save(member));
         } catch (DataIntegrityViolationException e) {
-            // 동시성 경쟁으로 사전 체크 통과 후 DB 제약조건 위반 시 재확인
-            if (memberRepository.existsByNickname(request.nickname())) {
+            // 동시성 경쟁으로 락+사전 체크 통과 후 DB 제약조건 위반 시 재확인
+            if (memberRepository.existsByNickname(request.nickname()))
                 throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
-            }
-            throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
+            if (memberRepository.existsByEmail(request.email()))
+                throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
+            throw e; // 예상치 못한 제약조건 위반은 원본 예외 전파
         }
     }
 

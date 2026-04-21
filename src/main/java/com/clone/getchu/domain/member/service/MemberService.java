@@ -11,10 +11,14 @@ import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.InvalidRequestException;
 import com.clone.getchu.global.exception.NotFoundException;
 import com.clone.getchu.global.security.CustomUserDetails;
+import com.clone.getchu.global.util.RedisKeyConstants;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate stringRedisTemplate;
 
     // 내 정보 조회(로그인 필요)
     public MemberResponse getMyInfo(Long memberId) {
@@ -36,14 +41,36 @@ public class MemberService {
         Member member = memberRepository.findById(userDetails.getMemberId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // 닉네임을 변경하는 경우에만 중복 체크 (자기 자신의 현재 닉네임은 허용)
-        if (request.nickname() != null && !request.nickname().equals(member.getNickname())
-                && memberRepository.existsByNickname(request.nickname())) {
-            throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
-        }
+        validateNicknameAvailable(request.nickname(), member.getNickname());
 
         member.update(request.nickname(), request.profileImageUrl());
         return MemberResponse.from(member);
+    }
+
+    /**
+     * 닉네임 사용 가능 여부 검증 (Lettuce SETNX 락 + DB 중복 체크)
+     *
+     * - nickname이 null이거나 현재 닉네임과 동일하면 검증 생략
+     * - SETNX로 락 획득 실패 시: 다른 요청이 같은 닉네임을 처리 중 → 409
+     * - 락 획득 후 DB 중복 확인 → 409
+     * - 락은 check 범위만 보호. save 이후는 DB unique constraint가 최종 방어선.
+     */
+    public void validateNicknameAvailable(String nickname, String currentNickname) {
+        if (nickname == null || nickname.equals(currentNickname)) return;
+
+        String lockKey = RedisKeyConstants.nicknameLockKey(nickname);
+        Boolean acquired = stringRedisTemplate.opsForValue()
+                .setIfAbsent(lockKey, "1", 5, TimeUnit.SECONDS);
+        if (!Boolean.TRUE.equals(acquired)) {
+            throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+        try {
+            if (memberRepository.existsByNickname(nickname)) {
+                throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
+            }
+        } finally {
+            stringRedisTemplate.delete(lockKey);
+        }
     }
 
     // 회원 탈퇴 (소프트 삭제)

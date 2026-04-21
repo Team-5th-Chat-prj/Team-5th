@@ -67,7 +67,6 @@ public class Member extends BaseEntity {
         this.deleted = false;
     }
 
-    // TODO [v2] Review 도메인 구현 후 연동 예정
     // - 리뷰 작성 시 updateReviewStats() 호출 / 거래 완료(SOLD) 상태 구매자만 작성 가능
     public void updateReviewStats(BigDecimal newRating) {
         // 새 평균 = (기존 평균 * 기존 리뷰 수 + 새 별점) / (기존 리뷰 수 + 1)
