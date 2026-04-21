@@ -20,6 +20,7 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "존재하지 않는 회원입니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "M002", "현재 비밀번호가 올바르지 않습니다."),
     SAME_AS_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "M003", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "M004", "이미 사용 중인 닉네임입니다."),
     // ===== CATEGORY (C) =====
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "C001", "존재하지 않는 카테고리입니다."),
     // ===== PRODUCT (P) =====

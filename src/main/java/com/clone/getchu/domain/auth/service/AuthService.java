@@ -7,6 +7,7 @@ import com.clone.getchu.domain.auth.dto.SignupRequest;
 import com.clone.getchu.domain.auth.dto.SignupResponse;
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
+import com.clone.getchu.domain.member.service.MemberService;
 import com.clone.getchu.global.exception.ConflictException;
 import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.global.exception.NotFoundException;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class AuthService {
 
     private final MemberRepository memberRepository;
+    private final MemberService memberService;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final StringRedisTemplate stringRedisTemplate;
@@ -44,18 +46,25 @@ public class AuthService {
         if (memberRepository.existsByEmail(request.email())) {
             throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
         }
+        // 닉네임 중복 체크 + Lettuce SETNX 락 (공통 검증 위임)
+        memberService.validateNicknameAvailable(request.nickname(), null);
 
         Member member = Member.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .nickname(request.nickname())
-                .profileImageUrl(request.profileImageUrl()) // 추가
+                .profileImageUrl(request.profileImageUrl())
                 .build();
 
         try {
             return SignupResponse.from(memberRepository.save(member));
         } catch (DataIntegrityViolationException e) {
-            // DB Unique 제약조건 위반 시 발생 (동시성 제어의 최후 방어선)
+            // 추가 DB 조회 없이 예외 메시지로 위반된 제약조건을 판별
+            // 회원가입의 unique 제약은 email·nickname 둘뿐이므로 닉네임이 아니면 이메일 충돌
+            String msg = e.getMostSpecificCause().getMessage();
+            if (msg != null && msg.contains("uk_member_nickname")) {
+                throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
+            }
             throw new ConflictException(ErrorCode.DUPLICATE_EMAIL);
         }
     }

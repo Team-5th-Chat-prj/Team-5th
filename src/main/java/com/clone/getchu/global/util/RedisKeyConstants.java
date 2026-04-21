@@ -21,6 +21,9 @@ public final class RedisKeyConstants {
 
     // Access Token 블랙리스트: "BL:{accessToken}"
     private static final String BL_PREFIX = "BL:";
+
+    // 닉네임 선점 락: "LOCK:NICKNAME:{nickname}"
+    private static final String NICKNAME_LOCK_PREFIX = "LOCK:NICKNAME:";
     /**
      * Refresh Token Redis 키 생성
      * 예: refreshTokenKey(1L) → "RT:1"
@@ -35,5 +38,13 @@ public final class RedisKeyConstants {
      */
     public static String blacklistKey(String accessToken) {
         return BL_PREFIX + accessToken;
+    }
+
+    /**
+     * 닉네임 선점 락 Redis 키 생성
+     * 예: nicknameLockKey("홍길동") → "LOCK:NICKNAME:홍길동"
+     */
+    public static String nicknameLockKey(String nickname) {
+        return NICKNAME_LOCK_PREFIX + nickname;
     }
 }
