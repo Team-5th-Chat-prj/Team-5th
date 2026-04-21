@@ -18,7 +18,7 @@ public class LockService {
 
     private final RedisLockRepository redisLockRepository;
 
-    @Value("${lock.retry.max:120}")
+    @Value("${lock.retry.max:30}")
     private int maxRetry;
 
     @Value("${lock.retry.initial-backoff-ms:50}")
