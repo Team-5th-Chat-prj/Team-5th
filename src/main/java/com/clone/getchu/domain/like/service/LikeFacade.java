@@ -24,7 +24,7 @@ public class LikeFacade {
 
     //찜삭제
     public void deleteLike(Long productId, Long memberId){
-        String lockKey = "lock:product:"+productId+":member:"+memberId;
+        String lockKey = "lock:product:"+productId;
 
         lockService.executeWithLock(lockKey, () -> {
             likeService.deleteLike(productId, memberId);
