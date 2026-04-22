@@ -50,9 +50,8 @@ dependencies {
     implementation 'org.hibernate.orm:hibernate-spatial'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    // Redis & Lettuce & Redisson
+    // Redis & Lettuce
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.redisson:redisson-spring-boot-starter:3.27.0'
 
     // WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
@@ -83,6 +82,12 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Embedded Redis (테스트용 — 실제 Redis 없이도 동작)
+    // slf4j-simple 제외: Spring Boot Logback과 충돌 방지
+    testImplementation('it.ozimov:embedded-redis:0.7.3') {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
 }
 
 // ✅ dependencies 밖으로 꺼내야 함

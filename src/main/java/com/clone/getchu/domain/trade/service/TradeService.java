@@ -39,7 +39,7 @@ public class TradeService {
      */
     @Transactional
     public TradeReserveResponse reserveProduct(Long productId, Long buyerId) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
 
         //본인 상품 예약 방지 검증
