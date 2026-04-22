@@ -92,7 +92,8 @@ class NearbyProductServiceTest {
     @DisplayName("반경 내 상품만 조회되고 총 개수가 정확하다")
     void getNearbyProducts_returnsOnlyMatchingProducts() {
         // given
-        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
+        Member member = mockMemberWithLocation();
+        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
         List<NearbyProductRow> rows = List.of(mockRow(1L, "상품A", 500.0), mockRow(2L, "상품B", 1200.0));
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(new PageImpl<>(rows, PAGEABLE, 2));
@@ -111,7 +112,8 @@ class NearbyProductServiceTest {
     @DisplayName("거리 오름차순 순서가 유지된다")
     void getNearbyProducts_preservesDistanceOrder() {
         // given — 가까운 순서: id=3(100m), id=1(800m), id=2(2500m)
-        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
+        Member member = mockMemberWithLocation();
+        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
         List<NearbyProductRow> rows = List.of(
                 mockRow(3L, "상품3", 100.0),
                 mockRow(1L, "상품1", 800.0),
@@ -132,7 +134,8 @@ class NearbyProductServiceTest {
     @DisplayName("거리(meters)를 km 소수점 1자리로 올바르게 변환한다")
     void getNearbyProducts_distanceConvertedCorrectly() {
         // given — 1234m → 1.2km (반올림), 567m → 0.6km
-        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
+        Member member = mockMemberWithLocation();
+        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
         List<NearbyProductRow> rows = List.of(mockRow(1L, "상품1", 1234.0), mockRow(2L, "상품2", 567.0));
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(new PageImpl<>(rows, PAGEABLE, 2));
@@ -149,7 +152,8 @@ class NearbyProductServiceTest {
     @DisplayName("반경 내 상품이 없으면 빈 페이지를 반환한다")
     void getNearbyProducts_emptyResult() {
         // given
-        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
+        Member member = mockMemberWithLocation();
+        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(Page.empty(PAGEABLE));
 
@@ -164,7 +168,8 @@ class NearbyProductServiceTest {
     @DisplayName("동네 인증이 안 된 회원은 LOCATION_NOT_VERIFIED 예외가 발생한다")
     void getNearbyProducts_locationNotVerified() {
         // given
-        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithoutLocation()));
+        Member member = mockMemberWithoutLocation();
+        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
 
         // when & then
         assertThatThrownBy(() -> productService.getNearbyProducts(MEMBER_ID, PAGEABLE))
@@ -179,7 +184,8 @@ class NearbyProductServiceTest {
     @DisplayName("lng, lat, locationRadius가 repository에 올바르게 전달된다")
     void getNearbyProducts_passesCorrectParamsToRepository() {
         // given
-        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
+        Member member = mockMemberWithLocation();
+        given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(Page.empty(PAGEABLE));
 

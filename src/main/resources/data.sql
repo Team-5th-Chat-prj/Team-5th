@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- Get-chu safe seed data
 -- Minimal seed for checking frontend/backend boot without optional feature tables.
 -- Test accounts:
@@ -6,7 +6,6 @@
 --   seller@test.com / Test1234!
 -- ============================================================
 
--- Categories aligned with frontend category tabs.
 INSERT INTO category (id, name) VALUES
 (1, '디지털기기'),
 (2, '생활가전'),
@@ -18,7 +17,6 @@ INSERT INTO category (id, name) VALUES
 ON DUPLICATE KEY UPDATE
     name = VALUES(name);
 
--- Main frontend quick-login accounts.
 INSERT INTO members (
     id, email, password, nickname, profile_image_url,
     average_rating, review_count, role, deleted,
@@ -37,12 +35,10 @@ ON DUPLICATE KEY UPDATE
     deleted = VALUES(deleted),
     updated_at = NOW();
 
--- Products only. No location, likes, trades, or chat seed data is used in safe mode.
 INSERT INTO product (
     id, seller_id, category_id, title, description, price, status,
     like_count, is_deleted, created_at, updated_at
 ) VALUES
--- seller-owned products visible to buyer
 (1, 2, 1, '아이패드 Pro 11인치', '2022년 모델, 거의 새것입니다. 애플펜슬 포함. 직거래 선호합니다.', 550000, 'SALE', 0, false, NOW(), NOW()),
 (2, 2, 4, '나이키 맨투맨 L사이즈', '한 번 입었습니다. 사이즈 미스로 팝니다.', 35000, 'SALE', 0, false, NOW(), NOW()),
 (3, 2, 3, '이케아 책상 120cm', '2년 사용, 상태 양호합니다. 이사로 인해 급처합니다.', 80000, 'SALE', 0, false, NOW(), NOW()),
@@ -56,7 +52,6 @@ INSERT INTO product (
 (214, 2, 3, '이케아 KALLAX 책장 4x4', '2년 사용, 조립 상태 양호. 직거래만.', 55000, 'SALE', 0, false, NOW(), NOW()),
 (215, 2, 5, '파이썬 프로그래밍 책 3권 세트', '밑줄 없음, 깨끗한 상태.', 18000, 'SALE', 0, false, NOW(), NOW()),
 (216, 2, 2, '쿠쿠 전기밥솥 6인용', '1년 사용, 정상 작동. 박스 없음.', 65000, 'SALE', 0, false, NOW(), NOW()),
--- buyer-owned products visible to seller
 (200, 1, 1, '맥북 프로 14인치 M3', '2023년 구매, 스크래치 없음. 충전기 포함.', 1800000, 'SALE', 0, false, NOW(), NOW()),
 (201, 1, 1, '에어팟 프로 2세대', '6개월 사용, 케이스 포함. 배터리 95%.', 180000, 'SALE', 0, false, NOW(), NOW()),
 (202, 1, 4, '무신사 스탠다드 후드티 XL', '한 번 세탁, 상태 좋음. 블랙 컬러.', 28000, 'SALE', 0, false, NOW(), NOW()),
@@ -96,9 +91,3 @@ INSERT IGNORE INTO product_image (product_id, image_url) VALUES
 (214, 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600'),
 (215, 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600'),
 (216, 'https://images.unsplash.com/photo-1585515320310-259814833e62?w=600');
-
--- ─── 공간 인덱스 ─────────────────────────────────────────
--- Hibernate ddl-auto가 SPATIAL INDEX를 생성하지 못하므로 여기서 직접 생성
--- IF NOT EXISTS: 서버가 여러 대 동시에 기동해도 중복 실행 안전
-CREATE SPATIAL INDEX IF NOT EXISTS idx_member_location  ON members(location);
-CREATE SPATIAL INDEX IF NOT EXISTS idx_product_location ON PRODUCT(location);

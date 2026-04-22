@@ -8,13 +8,9 @@ import com.clone.getchu.global.exception.KakaoApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -32,7 +28,7 @@ public class KakaoLocalApiClient {
     @Value("${kakao.api-key}")
     private String apiKey;
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     /**
      * 주소 문자열 → 위도/경도 변환
@@ -45,16 +41,17 @@ public class KakaoLocalApiClient {
                 .toUriString();
 
         try {
-            ResponseEntity<KakaoAddressResponse> response = restTemplate.exchange(
-                    url, HttpMethod.GET, buildAuthHeader(), KakaoAddressResponse.class);
+            KakaoAddressResponse body = restClient.get()
+                    .uri(url)
+                    .header("Authorization", "KakaoAK " + apiKey)
+                    .retrieve()
+                    .body(KakaoAddressResponse.class);
 
-            KakaoAddressResponse body = response.getBody();
             if (body == null || body.getDocuments() == null || body.getDocuments().isEmpty()) {
                 throw new KakaoApiException(ErrorCode.KAKAO_ADDRESS_NOT_FOUND, address);
             }
 
             KakaoAddressResponse.Document doc = body.getDocuments().get(0);
-            // 도로명 주소 좌표 우선, 없으면 지번 주소 좌표
             KakaoAddressResponse.Coord coord =
                     doc.getRoadAddress() != null ? doc.getRoadAddress() : doc.getAddress();
 
@@ -76,7 +73,6 @@ public class KakaoLocalApiClient {
      * 반환 형식: "마포구 합정동"
      */
     public String coordToRegionName(double lat, double lng) {
-        // 카카오 API에서 x=경도, y=위도
         String url = UriComponentsBuilder.fromHttpUrl(COORD_URL)
                 .queryParam("x", lng)
                 .queryParam("y", lat)
@@ -84,17 +80,18 @@ public class KakaoLocalApiClient {
                 .toUriString();
 
         try {
-            ResponseEntity<KakaoCoordResponse> response = restTemplate.exchange(
-                    url, HttpMethod.GET, buildAuthHeader(), KakaoCoordResponse.class);
+            KakaoCoordResponse body = restClient.get()
+                    .uri(url)
+                    .header("Authorization", "KakaoAK " + apiKey)
+                    .retrieve()
+                    .body(KakaoCoordResponse.class);
 
-            KakaoCoordResponse body = response.getBody();
             if (body == null || body.getDocuments() == null || body.getDocuments().isEmpty()) {
                 throw new KakaoApiException(ErrorCode.KAKAO_REGION_NOT_FOUND);
             }
 
             List<KakaoCoordResponse.Document> docs = body.getDocuments();
 
-            // 행정동(H) 우선, 없으면 첫 번째 문서
             KakaoCoordResponse.Document doc = docs.stream()
                     .filter(d -> "H".equals(d.getRegionType()))
                     .findFirst()
@@ -106,11 +103,5 @@ public class KakaoLocalApiClient {
             log.error("카카오 좌표→지역 API 호출 실패 [lat={}, lng={}]: {}", lat, lng, e.getMessage());
             throw new KakaoApiException(ErrorCode.KAKAO_API_ERROR, e);
         }
-    }
-
-    private HttpEntity<Void> buildAuthHeader() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "KakaoAK " + apiKey);
-        return new HttpEntity<>(headers);
     }
 }

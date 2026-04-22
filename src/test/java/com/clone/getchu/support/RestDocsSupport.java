@@ -4,6 +4,8 @@ import com.clone.getchu.global.config.SecurityConfig;
 import com.clone.getchu.global.security.JwtAccessDeniedHandler;
 import com.clone.getchu.global.security.JwtAuthEntryPoint;
 import com.clone.getchu.global.security.JwtProvider;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -49,6 +53,19 @@ public abstract class RestDocsSupport {
     @BeforeEach
     void setUp(WebApplicationContext context,
                RestDocumentationContextProvider restDocumentation) {
+        // 미인증 요청 시 JwtAuthEntryPoint 목이 실제로 401을 내려주도록 설정
+        // 기본 Mockito 목은 void 메서드를 no-op으로 처리해서 응답 상태가 바뀌지 않음
+        // commence() 자체가 throws IOException을 선언하므로 호출 라인을 try-catch로 감쌈
+        try {
+            willAnswer(invocation -> {
+                HttpServletResponse response = invocation.getArgument(1);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return null;
+            }).given(jwtAuthEntryPoint).commence(any(), any(), any());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         this.mockMvc = MockMvcBuilders
                 .webAppContextSetup(context)
                 .apply(springSecurity())

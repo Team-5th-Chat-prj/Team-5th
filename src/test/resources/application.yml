@@ -25,10 +25,10 @@ jwt:
 # 테스트 환경 분산락 설정 (빠른 실패 → 테스트 속도 개선)
 lock:
   retry:
-    max: 10                  # 운영 30회 → 테스트 10회
+    max: 100                 # 테스트용: 동시성 테스트(100 threads)에서 모두 성공시키기 위해 재시도 횟수 증가 (운영: 30)
     initial-backoff-ms: 10   # 운영 50ms → 테스트 10ms
     max-backoff-ms: 100      # 운영 1000ms → 테스트 100ms
-  expiration-seconds: 3
+  expiration-seconds: 5      # 테스트용: 락 유지 시간 여유 증가 (운영: 3초)
 
 kakao:
   api-key: test-kakao-api-key
