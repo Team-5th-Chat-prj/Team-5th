@@ -79,7 +79,7 @@ class NearbyProductServiceTest {
                 idDistanceRow(2L, 1200.0)
         );
         Page<Object[]> idsPage = new PageImpl<>(rows, PAGEABLE, 2);
-        given(productRepository.findNearbyIdsAndDistance(anyString(), anyDouble(), eq(PAGEABLE)))
+        given(productRepository.findNearbyIdsAndDistance(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(idsPage);
 
         Product p1 = mockProduct(1L, "상품A", "마포구 합정동");
@@ -108,7 +108,7 @@ class NearbyProductServiceTest {
                 idDistanceRow(2L, 2500.0)
         );
         Page<Object[]> idsPage = new PageImpl<>(rows, PAGEABLE, 3);
-        given(productRepository.findNearbyIdsAndDistance(anyString(), anyDouble(), eq(PAGEABLE)))
+        given(productRepository.findNearbyIdsAndDistance(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(idsPage);
 
         Product p1 = mockProduct(1L, "상품1", "A동");
@@ -135,7 +135,7 @@ class NearbyProductServiceTest {
                 idDistanceRow(2L, 567.0)
         );
         Page<Object[]> idsPage = new PageImpl<>(rows, PAGEABLE, 2);
-        given(productRepository.findNearbyIdsAndDistance(anyString(), anyDouble(), eq(PAGEABLE)))
+        given(productRepository.findNearbyIdsAndDistance(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(idsPage);
 
         Product p1 = mockProduct(1L, "상품1", "A동");
@@ -156,7 +156,7 @@ class NearbyProductServiceTest {
     @DisplayName("반경 내 상품이 없으면 빈 페이지를 반환한다")
     void getNearbyProducts_emptyResult() {
         // given
-        given(productRepository.findNearbyIdsAndDistance(anyString(), anyDouble(), eq(PAGEABLE)))
+        given(productRepository.findNearbyIdsAndDistance(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(Page.empty(PAGEABLE));
 
         // when
@@ -169,18 +169,19 @@ class NearbyProductServiceTest {
     }
 
     @Test
-    @DisplayName("WKT POINT가 경도(x) 위도(y) 순서로 생성된다")
-    void getNearbyProducts_wktPointFormat() {
+    @DisplayName("lng, lat, radiusMeters가 올바른 값으로 repository에 전달된다")
+    void getNearbyProducts_passesCorrectParamsToRepository() {
         // given
-        given(productRepository.findNearbyIdsAndDistance(anyString(), anyDouble(), eq(PAGEABLE)))
+        given(productRepository.findNearbyIdsAndDistance(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(Page.empty(PAGEABLE));
 
         // when
         productService.getNearbyProducts(LAT, LNG, RADIUS_KM, PAGEABLE);
 
-        // then — WKT 표준: POINT(경도 위도) = POINT(x y)
+        // then — 경도(lng), 위도(lat), 반경(meters) 순서로 전달
         verify(productRepository).findNearbyIdsAndDistance(
-                eq("POINT(" + LNG + " " + LAT + ")"),
+                eq(LNG),
+                eq(LAT),
                 eq((double) RADIUS_KM * 1000),
                 eq(PAGEABLE)
         );

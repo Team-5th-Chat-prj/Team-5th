@@ -22,22 +22,23 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
      */
     @Query(
             value = "SELECT p.id, " +
-                    "ST_Distance_Sphere(p.location, ST_PointFromText(:point, 4326, 'axis-order=long-lat')) " +
+                    "ST_Distance_Sphere(p.location, ST_SRID(ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')')), 4326)) " +
                     "FROM product p " +
                     "WHERE p.location IS NOT NULL " +
                     "AND p.is_deleted = false " +
                     "AND p.status IN ('SALE', 'RESERVED') " +
-                    "AND ST_Distance_Sphere(p.location, ST_PointFromText(:point, 4326, 'axis-order=long-lat')) <= :radiusMeters " +
-                    "ORDER BY ST_Distance_Sphere(p.location, ST_PointFromText(:point, 4326, 'axis-order=long-lat'))",
+                    "AND ST_Distance_Sphere(p.location, ST_SRID(ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')')), 4326)) <= :radiusMeters " +
+                    "ORDER BY ST_Distance_Sphere(p.location, ST_SRID(ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')')), 4326))",
             countQuery = "SELECT COUNT(*) FROM product p " +
                     "WHERE p.location IS NOT NULL " +
                     "AND p.is_deleted = false " +
                     "AND p.status IN ('SALE', 'RESERVED') " +
-                    "AND ST_Distance_Sphere(p.location, ST_PointFromText(:point, 4326, 'axis-order=long-lat')) <= :radiusMeters",
+                    "AND ST_Distance_Sphere(p.location, ST_SRID(ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')')), 4326)) <= :radiusMeters",
             nativeQuery = true
     )
     Page<Object[]> findNearbyIdsAndDistance(
-            @Param("point") String point,
+            @Param("lng") double lng,
+            @Param("lat") double lat,
             @Param("radiusMeters") double radiusMeters,
             Pageable pageable);
 

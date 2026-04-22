@@ -168,13 +168,11 @@ public class ProductService {
     public Page<NearbyProductResponse> getNearbyProducts(
             double lat, double lng, int radiusKm, Pageable pageable) {
 
-        // WKT POINT 형식: x=경도, y=위도 순서 (WGS84)
-        String wktPoint = "POINT(" + lng + " " + lat + ")";
         double radiusMeters = radiusKm * 1000.0;
 
         // 1단계: ID + 거리(meters) 페이지 조회
         Page<Object[]> idsPage = productRepository.findNearbyIdsAndDistance(
-                wktPoint, radiusMeters, pageable);
+                lng, lat, radiusMeters, pageable);
 
         if (idsPage.isEmpty()) {
             return Page.empty(pageable);
