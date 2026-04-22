@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
@@ -35,14 +34,11 @@ public class KakaoLocalApiClient {
      * 도로명 주소가 있으면 우선 사용, 없으면 지번 주소 좌표 반환
      */
     public CoordDto addressToCoord(String address) {
-        String url = UriComponentsBuilder.fromHttpUrl(ADDRESS_URL)
-                .queryParam("query", address)
-                .build()
-                .toUriString();
-
         try {
             KakaoAddressResponse body = restClient.get()
-                    .uri(url)
+                    .uri(ADDRESS_URL, builder -> builder
+                            .queryParam("query", address)
+                            .build())
                     .header("Authorization", "KakaoAK " + apiKey)
                     .retrieve()
                     .body(KakaoAddressResponse.class);
@@ -73,15 +69,12 @@ public class KakaoLocalApiClient {
      * 반환 형식: "마포구 합정동"
      */
     public String coordToRegionName(double lat, double lng) {
-        String url = UriComponentsBuilder.fromHttpUrl(COORD_URL)
-                .queryParam("x", lng)
-                .queryParam("y", lat)
-                .build()
-                .toUriString();
-
         try {
             KakaoCoordResponse body = restClient.get()
-                    .uri(url)
+                    .uri(COORD_URL, builder -> builder
+                            .queryParam("x", lng)
+                            .queryParam("y", lat)
+                            .build())
                     .header("Authorization", "KakaoAK " + apiKey)
                     .retrieve()
                     .body(KakaoCoordResponse.class);
