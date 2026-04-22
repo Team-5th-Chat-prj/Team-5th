@@ -71,6 +71,7 @@ class ProductControllerTest {
         );
         ProductResponse response = new ProductResponse(
                 1L,
+                1L,
                 "아이폰 15 팝니다",
                 "거의 새거에요",
                 1000000,
@@ -124,6 +125,7 @@ class ProductControllerTest {
         // given
         ProductResponse response = new ProductResponse(
                 1L,
+                1L,
                 "상세 제목",
                 "상품 상세 설명입니다.",
                 15000,
@@ -150,6 +152,7 @@ class ProductControllerTest {
                 "수정된 제목", null, 1200000, null, ProductEnum.RESERVED, null
         );
         ProductResponse response = new ProductResponse(
+                1L,
                 1L,
                 "수정된 제목",
                 "수정된 상세 설명입니다.",

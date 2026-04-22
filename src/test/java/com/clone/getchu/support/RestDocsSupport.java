@@ -7,7 +7,6 @@ import com.clone.getchu.global.security.JwtProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -39,8 +38,7 @@ public abstract class RestDocsSupport {
     private RedisConnectionFactory redisConnectionFactory;  // RedisConfig 의존성 해소
     @MockBean
     private StringRedisTemplate stringRedisTemplate;        // JwtAuthFilter 블랙리스트 체크
-    @MockBean
-    private RedissonClient redissonClient;                  // Redisson 자동 연결 차단
+
     @MockBean
     private JwtAuthEntryPoint jwtAuthEntryPoint;
     @MockBean

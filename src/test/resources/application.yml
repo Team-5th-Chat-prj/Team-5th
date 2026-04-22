@@ -4,10 +4,14 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: never  # 테스트에서 data.sql 실행 안 함 (각 테스트가 직접 데이터 세팅)
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: create-drop
+    defer-datasource-initialization: true  # Hibernate DDL 이후 data.sql 실행
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
@@ -17,3 +21,11 @@ jwt:
   secret-key: test-secret-key-must-be-at-least-32-characters-long!!
   access-expiration-time: 900000
   refresh-expiration-time: 604800000
+
+# 테스트 환경 분산락 설정 (빠른 실패 → 테스트 속도 개선)
+lock:
+  retry:
+    max: 10                  # 운영 30회 → 테스트 10회
+    initial-backoff-ms: 10   # 운영 50ms → 테스트 10ms
+    max-backoff-ms: 100      # 운영 1000ms → 테스트 100ms
+  expiration-seconds: 3
