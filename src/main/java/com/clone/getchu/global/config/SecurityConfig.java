@@ -66,6 +66,7 @@ public class SecurityConfig {
                         // /auth/refresh: AT가 만료된 상태에서 호출되므로 인증 없이 허용
                         .requestMatchers("/auth/signup", "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products", "/products/**", "/categories", "/search/popular").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/nearby").permitAll()
                         .requestMatchers(HttpMethod.GET, "/members/*/reviews", "/members/*/reviews/written").permitAll()
                         // 타인 프로필 조회 추가
                         .requestMatchers(HttpMethod.GET, "/members/*").permitAll()

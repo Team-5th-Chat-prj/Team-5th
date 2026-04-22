@@ -17,3 +17,6 @@ jwt:
   secret-key: test-secret-key-must-be-at-least-32-characters-long!!
   access-expiration-time: 900000
   refresh-expiration-time: 604800000
+
+kakao:
+  api-key: test-kakao-api-key

@@ -12,11 +12,17 @@ import com.clone.getchu.global.common.CursorPageResponse;
 import com.clone.getchu.global.exception.BusinessException;
 import com.clone.getchu.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -32,6 +38,11 @@ public class ProductService {
         Member seller = memberRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
+        // 동네 인증 없이는 상품 등록 불가 — 위치 정보가 없으면 근처 상품 기능이 동작하지 않음
+        if (seller.getLocation() == null) {
+            throw new BusinessException(ErrorCode.LOCATION_NOT_VERIFIED);
+        }
+
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
@@ -41,10 +52,14 @@ public class ProductService {
                 .title(request.title())
                 .description(request.description())
                 .price(request.price())
+                .location(seller.getLocation())
+                .locationName(seller.getLocationName())
                 .status(ProductEnum.SALE)
                 .build();
 
         product.updateImages(request.imageUrls());
+        // 판매자의 현재 인증된 위치를 상품에 복사 — 상품은 등록 당시 동네 기준으로 노출됨
+        product.updateLocation(seller.getLocation(), seller.getLocationName());
 
         productRepository.save(product);
         return ProductResponse.from(product);
@@ -141,5 +156,52 @@ public class ProductService {
             );
         }
         return cond;
+    }
+
+    /**
+     * 반경 내 근처 상품 목록 조회 — 거리 오름차순, 페이지당 20개
+     *
+     * 1단계: native query로 반경 내 상품 ID + 거리(meters) 조회 (페이징 포함)
+     * 2단계: JOIN FETCH로 Product 엔티티 일괄 로드 (N+1 방지)
+     * 3단계: 1단계 순서를 유지하면서 거리(km, 소수점 1자리) 매핑
+     */
+    public Page<NearbyProductResponse> getNearbyProducts(
+            double lat, double lng, int radiusKm, Pageable pageable) {
+
+        // WKT POINT 형식: x=경도, y=위도 순서 (WGS84)
+        String wktPoint = "POINT(" + lng + " " + lat + ")";
+        double radiusMeters = radiusKm * 1000.0;
+
+        // 1단계: ID + 거리(meters) 페이지 조회
+        Page<Object[]> idsPage = productRepository.findNearbyIdsAndDistance(
+                wktPoint, radiusMeters, pageable);
+
+        if (idsPage.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 2단계: ID → 거리(km) 맵 — LinkedHashMap으로 거리 오름차순 순서 보존
+        Map<Long, Double> idToDistanceKm = new LinkedHashMap<>();
+        for (Object[] row : idsPage.getContent()) {
+            Long id = ((Number) row[0]).longValue();
+            double distanceMeters = ((Number) row[1]).doubleValue();
+            // 소수점 1자리 반올림
+            double distanceKm = Math.round(distanceMeters / 1000.0 * 10.0) / 10.0;
+            idToDistanceKm.put(id, distanceKm);
+        }
+
+        // 3단계: JOIN FETCH로 엔티티 일괄 로드
+        List<Long> ids = new ArrayList<>(idToDistanceKm.keySet());
+        Map<Long, Product> productMap = productRepository.findAllWithDetailsByIds(ids)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        // 4단계: 거리 순서 유지하면서 Response 생성
+        List<NearbyProductResponse> content = ids.stream()
+                .filter(productMap::containsKey)
+                .map(id -> NearbyProductResponse.of(productMap.get(id), idToDistanceKm.get(id)))
+                .toList();
+
+        return new PageImpl<>(content, pageable, idsPage.getTotalElements());
     }
 }

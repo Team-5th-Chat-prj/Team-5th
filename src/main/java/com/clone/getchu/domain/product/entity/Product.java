@@ -9,11 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.locationtech.jts.geom.Point;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +18,6 @@ import java.util.List;
 @Table(name = "PRODUCT")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(AuditingEntityListener.class)
 public class Product extends BaseEntity {
 
     @Id
@@ -56,18 +52,27 @@ public class Product extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    // 상품 등록 위치 (GPS 좌표)
+    private Point location;
+
+    // 상품 등록 동네 이름 (예: "마포구 합정동")
+    @Column(name = "location_name")
+    private String locationName;
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
 
     // --- Builder 패턴 ---
     @Builder
     public Product(Member seller, Category category, String title, String description,
-                   Integer price, ProductEnum status, Integer likeCount, Boolean isDeleted) {
+                   Integer price, Point location, String locationName, ProductEnum status, Integer likeCount, Boolean isDeleted) {
         this.seller = seller;
         this.category = category;
         this.title = title;
         this.description = description;
         this.price = price;
+        this.location = location;
+        this.locationName = locationName;
         this.status = status;
         this.likeCount = (likeCount != null) ? likeCount : 0;
         this.isDeleted = (isDeleted != null) ? isDeleted : false;
@@ -116,6 +121,11 @@ public class Product extends BaseEntity {
 
     public void decrementLikeCount() {
         if (this.likeCount > 0) this.likeCount--;
+    }
+
+    public void updateLocation(Point location, String locationName) {
+        this.location = location;
+        this.locationName = locationName;
     }
 
     public void softDelete() {

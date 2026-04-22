@@ -11,6 +11,7 @@ public record ProductListResponse(
         Integer price,
         ProductEnum status,
         String thumbnailUrl,
+        Integer likeCount,
         LocalDateTime createdAt
 ) {
     public static ProductListResponse from(Product product) {
@@ -21,6 +22,7 @@ public record ProductListResponse(
                 product.getPrice(),
                 product.getStatus(),
                 thumb,
+                product.getLikeCount(),
                 product.getCreatedAt()
         );
     }

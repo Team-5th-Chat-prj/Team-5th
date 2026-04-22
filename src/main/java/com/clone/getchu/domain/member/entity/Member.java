@@ -7,7 +7,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLRestriction;
+import org.locationtech.jts.geom.Point;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -55,6 +57,19 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private boolean deleted = false;
 
+    // 동네 인증 위치 (GPS 좌표)
+    private Point location;
+
+    // 동네 이름 (예: "마포구 합정동")
+    @Column(name = "location_name")
+    private String locationName;
+
+    // 근처 상품 조회 반경 (km), 기본값 3
+    // ddl-auto:update 시 기존 행에 DEFAULT 3이 채워지도록 @ColumnDefault 사용
+    @Column(name = "location_radius", nullable = false)
+    @ColumnDefault("3")
+    private Integer locationRadius = 3;
+
     @Builder
     private Member(String email, String password, String nickname, String profileImageUrl) {
         this.email = email;
@@ -98,13 +113,12 @@ public class Member extends BaseEntity {
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
-}
-// TODO [v2] 거주지역 추가 예정
-// - region 컬럼 추가 (예: "서울 강남구")
-// - 동네 인증 기능 연동
-// - 지역 기반 상품 검색 필터 적용
-// private String region;
 
+    public void updateLocation(Point location, String locationName) {
+        this.location = location;
+        this.locationName = locationName;
+    }
+}
 // TODO [v2] 회원 등급제 추가 예정
 // - averageRating 기준으로 등급 계산
 // - 🥕 새내기(1~2) / 😊 보통(3) / 😄 좋음(4) / 🌟 최고(5)
