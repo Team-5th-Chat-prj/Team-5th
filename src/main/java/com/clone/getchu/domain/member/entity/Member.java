@@ -64,11 +64,13 @@ public class Member extends BaseEntity {
     @Column(name = "location_name")
     private String locationName;
 
-    // 근처 상품 조회 반경 (km), 기본값 3
+    private static final int DEFAULT_LOCATION_RADIUS_KM = 3;
+
+    // 근처 상품 조회 반경 (km), 기본값 3km
     // ddl-auto:update 시 기존 행에 DEFAULT 3이 채워지도록 @ColumnDefault 사용
     @Column(name = "location_radius", nullable = false)
     @ColumnDefault("3")
-    private Integer locationRadius = 3;
+    private Integer locationRadius = DEFAULT_LOCATION_RADIUS_KM;
 
     @Builder
     private Member(String email, String password, String nickname, String profileImageUrl) {

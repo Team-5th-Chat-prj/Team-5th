@@ -34,7 +34,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
                     "         c.name AS categoryName, m.nickname AS sellerNickname, " +
                     "         (SELECT pi.image_url FROM product_image pi WHERE pi.product_id = p.id LIMIT 1) AS thumbnailUrl, " +
                     "         p.location_name AS locationName, " +
-                    "         ST_Distance_Sphere(p.location, ST_SRID(ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')')), 4326)) AS distanceMeters, " +
+                    "         ST_Distance_Sphere(p.location, ST_Point(:lng, :lat, 4326)) AS distanceMeters, " +
                     "         ST_Y(p.location) AS lat, ST_X(p.location) AS lng " +
                     "  FROM product p " +
                     "  JOIN category c ON p.category_id = c.id " +
@@ -45,7 +45,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
                     "WHERE t.distanceMeters <= :radiusMeters " +
                     "ORDER BY t.distanceMeters",
             countQuery = "SELECT COUNT(*) FROM ( " +
-                    "  SELECT ST_Distance_Sphere(p.location, ST_SRID(ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')')), 4326)) AS distanceMeters " +
+                    "  SELECT ST_Distance_Sphere(p.location, ST_Point(:lng, :lat, 4326)) AS distanceMeters " +
                     "  FROM product p " +
                     "  JOIN members m ON p.seller_id = m.id " +
                     "  WHERE p.location IS NOT NULL AND p.is_deleted = false " +
