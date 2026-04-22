@@ -18,11 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -159,47 +155,27 @@ public class ProductService {
     }
 
     /**
-     * 반경 내 근처 상품 목록 조회 — 거리 오름차순, 페이지당 20개
-     *
-     * 1단계: native query로 반경 내 상품 ID + 거리(meters) 조회 (페이징 포함)
-     * 2단계: JOIN FETCH로 Product 엔티티 일괄 로드 (N+1 방지)
-     * 3단계: 1단계 순서를 유지하면서 거리(km, 소수점 1자리) 매핑
+     * 내 동네 기반 근처 상품 목록 조회 — 거리 오름차순, 페이지당 20개
+     * 로그인한 회원의 인증된 위치(DB)와 설정된 반경을 사용하여 클라이언트 좌표 조작을 방지
      */
-    public Page<NearbyProductResponse> getNearbyProducts(
-            double lat, double lng, int radiusKm, Pageable pageable) {
+    public Page<NearbyProductResponse> getNearbyProducts(Long memberId, Pageable pageable) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        double radiusMeters = radiusKm * 1000.0;
-
-        // 1단계: ID + 거리(meters) 페이지 조회
-        Page<Object[]> idsPage = productRepository.findNearbyIdsAndDistance(
-                lng, lat, radiusMeters, pageable);
-
-        if (idsPage.isEmpty()) {
-            return Page.empty(pageable);
+        if (member.getLocation() == null) {
+            throw new BusinessException(ErrorCode.LOCATION_NOT_VERIFIED);
         }
 
-        // 2단계: ID → 거리(km) 맵 — LinkedHashMap으로 거리 오름차순 순서 보존
-        Map<Long, Double> idToDistanceKm = new LinkedHashMap<>();
-        for (Object[] row : idsPage.getContent()) {
-            Long id = ((Number) row[0]).longValue();
-            double distanceMeters = ((Number) row[1]).doubleValue();
-            // 소수점 1자리 반올림
-            double distanceKm = Math.round(distanceMeters / 1000.0 * 10.0) / 10.0;
-            idToDistanceKm.put(id, distanceKm);
-        }
+        double lng = member.getLocation().getX();
+        double lat = member.getLocation().getY();
+        double radiusMeters = member.getLocationRadius() * 1000.0;
 
-        // 3단계: JOIN FETCH로 엔티티 일괄 로드
-        List<Long> ids = new ArrayList<>(idToDistanceKm.keySet());
-        Map<Long, Product> productMap = productRepository.findAllWithDetailsByIds(ids)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+        Page<Object[]> rawPage = productRepository.findNearbyProducts(lng, lat, radiusMeters, pageable);
 
-        // 4단계: 거리 순서 유지하면서 Response 생성
-        List<NearbyProductResponse> content = ids.stream()
-                .filter(productMap::containsKey)
-                .map(id -> NearbyProductResponse.of(productMap.get(id), idToDistanceKm.get(id)))
+        List<NearbyProductResponse> content = rawPage.getContent().stream()
+                .map(NearbyProductResponse::from)
                 .toList();
 
-        return new PageImpl<>(content, pageable, idsPage.getTotalElements());
+        return new PageImpl<>(content, pageable, rawPage.getTotalElements());
     }
 }

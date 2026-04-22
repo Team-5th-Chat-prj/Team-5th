@@ -3,13 +3,15 @@ package com.clone.getchu.domain.product.controller;
 import com.clone.getchu.domain.product.dto.NearbyProductResponse;
 import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.service.ProductService;
+import com.clone.getchu.global.exception.BusinessException;
+import com.clone.getchu.global.exception.ErrorCode;
 import com.clone.getchu.support.RestDocsSupport;
+import com.clone.getchu.support.WithMockCustomUser;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
@@ -56,6 +58,7 @@ class NearbyProductControllerTest extends RestDocsSupport {
 
     @Test
     @DisplayName("근처 상품 조회 성공 - GET /api/products/nearby")
+    @WithMockCustomUser(memberId = 1L)
     void getNearbyProducts_success() throws Exception {
         // given
         List<NearbyProductResponse> content = List.of(
@@ -63,14 +66,11 @@ class NearbyProductControllerTest extends RestDocsSupport {
                 sampleResponse(2L, 1.2)
         );
         Page<NearbyProductResponse> page = new PageImpl<>(content, PageRequest.of(0, 20), 2);
-        given(productService.getNearbyProducts(anyDouble(), anyDouble(), anyInt(), any()))
+        given(productService.getNearbyProducts(anyLong(), any()))
                 .willReturn(page);
 
         // when & then
         mockMvc.perform(get("/api/products/nearby")
-                        .param("lat", "37.549")
-                        .param("lng", "126.914")
-                        .param("radius", "3")
                         .param("page", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
@@ -81,13 +81,10 @@ class NearbyProductControllerTest extends RestDocsSupport {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Product")
                                 .summary("근처 상품 목록 조회")
-                                .description("입력한 GPS 좌표 기준 반경 내 판매 중인 상품을 거리 오름차순으로 조회합니다.\n" +
-                                        "비로그인 상태에서도 조회 가능합니다.")
+                                .description("로그인한 회원의 인증된 동네 위치를 기준으로 반경 내 판매 중인 상품을 거리 오름차순으로 조회합니다.\n" +
+                                        "동네 인증이 되어 있지 않으면 400을 반환합니다.")
                                 .responseSchema(Schema.schema("NearbyProductResponse"))
                                 .queryParameters(
-                                        parameterWithName("lat").description("위도 (-90.0 ~ 90.0)"),
-                                        parameterWithName("lng").description("경도 (-180.0 ~ 180.0)"),
-                                        parameterWithName("radius").description("반경 km (1~10, 기본값 3)").optional(),
                                         parameterWithName("page").description("페이지 번호 (0부터, 기본값 0)").optional()
                                 )
                                 .responseFields(
@@ -101,7 +98,7 @@ class NearbyProductControllerTest extends RestDocsSupport {
                                         fieldWithPath("data.content[].sellerNickname").type(JsonFieldType.STRING).description("판매자 닉네임"),
                                         fieldWithPath("data.content[].thumbnailUrl").type(JsonFieldType.STRING).description("썸네일 이미지 URL (없으면 null)").optional(),
                                         fieldWithPath("data.content[].locationName").type(JsonFieldType.STRING).description("상품 등록 동네명").optional(),
-                                        fieldWithPath("data.content[].distanceKm").type(JsonFieldType.NUMBER).description("요청 좌표와의 거리 (km, 소수점 1자리)"),
+                                        fieldWithPath("data.content[].distanceKm").type(JsonFieldType.NUMBER).description("인증된 동네와의 거리 (km, 소수점 1자리)"),
                                         fieldWithPath("data.content[].lat").type(JsonFieldType.NUMBER).description("상품 위치 위도").optional(),
                                         fieldWithPath("data.content[].lng").type(JsonFieldType.NUMBER).description("상품 위치 경도").optional(),
                                         fieldWithPath("data.pageable").type(JsonFieldType.OBJECT).description("페이지 정보"),
@@ -133,50 +130,37 @@ class NearbyProductControllerTest extends RestDocsSupport {
     }
 
     @Test
-    @DisplayName("근처 상품 조회 - lat 누락 시 400 반환")
-    void getNearbyProducts_missingLat() throws Exception {
-        mockMvc.perform(get("/api/products/nearby")
-                        .param("lng", "126.914"))
+    @DisplayName("비로그인 상태에서 401 반환")
+    void getNearbyProducts_noAuth_returns401() throws Exception {
+        mockMvc.perform(get("/api/products/nearby"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("동네 인증이 안 된 회원은 400 반환")
+    @WithMockCustomUser(memberId = 1L)
+    void getNearbyProducts_locationNotVerified_returns400() throws Exception {
+        // given
+        given(productService.getNearbyProducts(anyLong(), any()))
+                .willThrow(new BusinessException(ErrorCode.LOCATION_NOT_VERIFIED));
+
+        // when & then
+        mockMvc.perform(get("/api/products/nearby"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("근처 상품 조회 - radius 범위 초과(11) 시 400 반환")
-    void getNearbyProducts_invalidRadius() throws Exception {
-        mockMvc.perform(get("/api/products/nearby")
-                        .param("lat", "37.549")
-                        .param("lng", "126.914")
-                        .param("radius", "11"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("근처 상품 조회 - 결과 없으면 빈 페이지 반환")
+    @DisplayName("근처 상품이 없으면 빈 페이지 반환")
+    @WithMockCustomUser(memberId = 1L)
     void getNearbyProducts_emptyResult() throws Exception {
         // given
-        given(productService.getNearbyProducts(anyDouble(), anyDouble(), anyInt(), any()))
+        given(productService.getNearbyProducts(anyLong(), any()))
                 .willReturn(Page.empty(PageRequest.of(0, 20)));
 
         // when & then
-        mockMvc.perform(get("/api/products/nearby")
-                        .param("lat", "37.549")
-                        .param("lng", "126.914"))
+        mockMvc.perform(get("/api/products/nearby"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(0));
-    }
-
-    @Test
-    @DisplayName("근처 상품 조회 - 비로그인 상태에서도 200 반환 (공개 API)")
-    void getNearbyProducts_noAuth_publicEndpoint() throws Exception {
-        // given
-        given(productService.getNearbyProducts(anyDouble(), anyDouble(), anyInt(), any()))
-                .willReturn(Page.empty(PageRequest.of(0, 20)));
-
-        // when & then — Authorization 헤더 없이 호출
-        mockMvc.perform(get("/api/products/nearby")
-                        .param("lat", "37.549")
-                        .param("lng", "126.914"))
-                .andExpect(status().isOk());
     }
 }

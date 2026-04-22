@@ -96,3 +96,9 @@ INSERT IGNORE INTO product_image (product_id, image_url) VALUES
 (214, 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600'),
 (215, 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600'),
 (216, 'https://images.unsplash.com/photo-1585515320310-259814833e62?w=600');
+
+-- ─── 공간 인덱스 ─────────────────────────────────────────
+-- Hibernate ddl-auto가 SPATIAL INDEX를 생성하지 못하므로 여기서 직접 생성
+-- IF NOT EXISTS: 서버가 여러 대 동시에 기동해도 중복 실행 안전
+CREATE SPATIAL INDEX IF NOT EXISTS idx_member_location  ON members(location);
+CREATE SPATIAL INDEX IF NOT EXISTS idx_product_location ON PRODUCT(location);

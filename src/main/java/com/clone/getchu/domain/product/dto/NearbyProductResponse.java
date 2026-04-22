@@ -36,4 +36,24 @@ public record NearbyProductResponse(
                 location != null ? location.getX() : null
         );
     }
+
+    // Object[] 컬럼 순서: id, title, price, status, categoryName, sellerNickname,
+    //                     thumbnailUrl, locationName, distanceMeters, lat, lng
+    public static NearbyProductResponse from(Object[] row) {
+        double distanceMeters = ((Number) row[8]).doubleValue();
+        double distanceKm = Math.round(distanceMeters / 1000.0 * 10.0) / 10.0;
+        return new NearbyProductResponse(
+                ((Number) row[0]).longValue(),
+                (String) row[1],
+                ((Number) row[2]).intValue(),
+                ProductEnum.valueOf((String) row[3]),
+                (String) row[4],
+                (String) row[5],
+                (String) row[6],
+                (String) row[7],
+                distanceKm,
+                row[9] != null ? ((Number) row[9]).doubleValue() : null,
+                row[10] != null ? ((Number) row[10]).doubleValue() : null
+        );
+    }
 }

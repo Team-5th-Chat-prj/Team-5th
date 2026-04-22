@@ -66,7 +66,7 @@ public class KakaoLocalApiClient {
 
         } catch (RestClientException e) {
             log.error("카카오 주소 검색 API 호출 실패 [address={}]: {}", address, e.getMessage());
-            throw new KakaoApiException(ErrorCode.KAKAO_API_ERROR, e.getMessage());
+            throw new KakaoApiException(ErrorCode.KAKAO_API_ERROR, e);
         }
     }
 
@@ -104,7 +104,7 @@ public class KakaoLocalApiClient {
 
         } catch (RestClientException e) {
             log.error("카카오 좌표→지역 API 호출 실패 [lat={}, lng={}]: {}", lat, lng, e.getMessage());
-            throw new KakaoApiException(ErrorCode.KAKAO_API_ERROR, e.getMessage());
+            throw new KakaoApiException(ErrorCode.KAKAO_API_ERROR, e);
         }
     }
 
