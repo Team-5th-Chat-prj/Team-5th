@@ -126,6 +126,7 @@ class LikeControllerTest extends RestDocsSupport {
                 1000000,
                 ProductEnum.SALE,
                 "https://image.url/test.jpg",
+                0,
                 LocalDateTime.now()
         );
         Page<ProductListResponse> pageResponse = new PageImpl<>(List.of(product), PageRequest.of(0, 10), 1);
@@ -165,6 +166,7 @@ class LikeControllerTest extends RestDocsSupport {
                                         fieldWithPath("data.content[].price").type(JsonFieldType.NUMBER).description("상품 가격"),
                                         fieldWithPath("data.content[].status").type(JsonFieldType.STRING).description("상품 상태"),
                                         fieldWithPath("data.content[].thumbnailUrl").type(JsonFieldType.STRING).description("상품 썸네일 URL").optional(),
+                                        fieldWithPath("data.content[].likeCount").type(JsonFieldType.NUMBER).description("찜 수"),
                                         fieldWithPath("data.content[].createdAt").type(JsonFieldType.STRING).description("상품 등록일시"),
                                         fieldWithPath("data.pageable.pageNumber").type(JsonFieldType.NUMBER).description("현재 페이지 번호"),
                                         fieldWithPath("data.pageable.pageSize").type(JsonFieldType.NUMBER).description("페이지 크기"),

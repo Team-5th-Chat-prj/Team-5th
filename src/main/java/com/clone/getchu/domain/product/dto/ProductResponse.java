@@ -14,6 +14,7 @@ public record ProductResponse(
         String description,
         Integer price,
         ProductEnum status,
+        Integer likeCount,
         String categoryName,     // 카테고리 ID 대신 이름을 반환
         String sellerNickname,   // 판매자 정보
         List<String> imageUrls,  // 상품 이미지 URL 목록
@@ -27,6 +28,7 @@ public record ProductResponse(
                 product.getDescription(),
                 product.getPrice(),
                 product.getStatus(),
+                product.getLikeCount(),
                 product.getCategory() != null ? product.getCategory().getName() : null,
                 product.getSeller() != null ? product.getSeller().getNickname() : "탈퇴한 사용자",
                 product.getImages().stream()

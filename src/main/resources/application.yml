@@ -24,8 +24,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
-
+        defer-datasource-initialization: true
+        sql:
+          init:
+            mode: always
   servlet:
     multipart:
       max-file-size: 20MB
@@ -49,3 +51,6 @@ lock:
     initial-backoff-ms: 50
     max-backoff-ms: 1000
   expiration-seconds: 3
+
+kakao:
+  api-key: ${KAKAO_API_KEY}

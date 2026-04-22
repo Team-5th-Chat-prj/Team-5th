@@ -21,6 +21,7 @@ public enum ErrorCode {
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "M002", "현재 비밀번호가 올바르지 않습니다."),
     SAME_AS_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "M003", "새 비밀번호는 현재 비밀번호와 달라야 합니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "M004", "이미 사용 중인 닉네임입니다."),
+    LOCATION_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "M005", "동네 인증이 필요합니다. 먼저 동네를 인증해주세요."),
     // ===== CATEGORY (C) =====
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "C001", "존재하지 않는 카테고리입니다."),
     // ===== PRODUCT (P) =====
@@ -37,11 +38,11 @@ public enum ErrorCode {
     TRADE_FORBIDDEN(HttpStatus.FORBIDDEN, "T004", "해당 거래에 대한 권한이 없습니다."),
     LOCK_TIMEOUT(HttpStatus.CONFLICT, "T005", "요청이 처리 중입니다. 잠시 후 다시 시도해주세요."),
 
-    // ===== CHAT (C) =====
-    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "C001", "존재하지 않는 채팅방입니다."),
-    SELF_CHAT(HttpStatus.BAD_REQUEST, "C002", "본인의 판매글에는 채팅을 시작할 수 없습니다."),
-    CHAT_FORBIDDEN(HttpStatus.FORBIDDEN, "C003", "해당 채팅방에 대한 권한이 없습니다."),
-    CHAT_ALREADY_LEFT(HttpStatus.FORBIDDEN, "C004", "이미 나간 채팅방입니다."),
+    // ===== CHAT (CH) =====
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CH001", "존재하지 않는 채팅방입니다."),
+    SELF_CHAT(HttpStatus.BAD_REQUEST, "CH002", "본인의 판매글에는 채팅을 시작할 수 없습니다."),
+    CHAT_FORBIDDEN(HttpStatus.FORBIDDEN, "CH003", "해당 채팅방에 대한 권한이 없습니다."),
+    CHAT_ALREADY_LEFT(HttpStatus.FORBIDDEN, "CH004", "이미 나간 채팅방입니다."),
 
     // ===== REVIEW (R) =====
     REVIEW_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "R001", "거래 완료(SOLD) 상태에서만 리뷰를 작성할 수 있습니다."),
@@ -52,6 +53,11 @@ public enum ErrorCode {
     // ===== LIKE (L) =====
     LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "L001", "이미 찜한 상품입니다."),
     LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "L002", "찜하지 않은 상품입니다."),
+
+    // ===== KAKAO API (K) =====
+    KAKAO_API_ERROR(HttpStatus.BAD_GATEWAY, "K001", "카카오 API 호출에 실패했습니다."),
+    KAKAO_ADDRESS_NOT_FOUND(HttpStatus.BAD_REQUEST, "K002", "해당 주소의 좌표를 찾을 수 없습니다."),
+    KAKAO_REGION_NOT_FOUND(HttpStatus.BAD_REQUEST, "K003", "해당 좌표의 지역 정보를 찾을 수 없습니다."),
 
     // ===== GLOBAL/COMMON (G) =====
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "G001", "입력값이 올바르지 않습니다."),

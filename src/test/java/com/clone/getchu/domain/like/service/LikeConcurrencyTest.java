@@ -8,6 +8,8 @@ import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.domain.product.entity.Product;
 import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.repository.ProductRepository;
+import com.clone.getchu.global.exception.BusinessException;
+import com.clone.getchu.global.exception.ErrorCode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,10 +25,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.clone.getchu.support.EmbeddedRedisConfig;
+import org.springframework.context.annotation.Import;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class LikeConcurrencyTest { 
+@Import(EmbeddedRedisConfig.class)
+class LikeConcurrencyTest {
 
     @Autowired
     private LikeFacade likeFacade;
@@ -120,10 +126,10 @@ class LikeConcurrencyTest {
             executorService.submit(() -> {
                 try {
                     barrier.await(); // 100개의 스레드가 모일 때까지 대기하다가 동시에 시작
-                    
+
                     likeFacade.createLike(productId, buyerId);
                     // likeService.createLike(productId, buyerId); // 락 제외 테스트 시 활성화
-                    
+
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     System.out.println("Error creating like: " + e.getMessage());
@@ -156,7 +162,6 @@ class LikeConcurrencyTest {
     void createLike_sameUser_concurrency() throws InterruptedException {
         int threadCount = 100;
 
-        // 1명의 구매자 생성
         Member buyer = Member.builder()
                 .email("buyer_same@test.com")
                 .nickname("구매자_동일")
@@ -170,39 +175,47 @@ class LikeConcurrencyTest {
         CountDownLatch latch = new CountDownLatch(threadCount);
 
         AtomicInteger successCount = new AtomicInteger();
-        AtomicInteger failCount = new AtomicInteger();
+        AtomicInteger lockTimeoutCount = new AtomicInteger();
+        AtomicInteger unexpectedFailCount = new AtomicInteger();
 
-        // 100번을 동시에 찜하기 요청 (동일 사용자)
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
-                    barrier.await(); // 100개의 스레드가 모일 때까지 대기하다가 동시에 시작
-                    
+                    barrier.await();
+
                     likeFacade.createLike(productId, buyerId);
-                    // likeService.createLike(productId, buyerId); // 락 제외 테스트 시 활성화
-                    
                     successCount.incrementAndGet();
+
+                } catch (BusinessException e) {
+                    if (e.getErrorCode() == ErrorCode.LOCK_TIMEOUT) {
+                        lockTimeoutCount.incrementAndGet();
+                    } else {
+                        e.printStackTrace();
+                        unexpectedFailCount.incrementAndGet();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    failCount.incrementAndGet();
+                    unexpectedFailCount.incrementAndGet();
                 } finally {
                     latch.countDown();
                 }
             });
         }
 
-        //latch.await(10, java.util.concurrent.TimeUnit.SECONDS);
-        latch.await();
+        boolean completed = latch.await(30, java.util.concurrent.TimeUnit.SECONDS);
+        executorService.shutdown();
 
-        // 단 1건만 성공하고 99건은 실패해야 함 (이미 찜한 상품 예외)
-        assertThat(successCount.get()).isEqualTo(1);
-        assertThat(failCount.get()).isEqualTo(99);
+        assertThat(completed).isTrue();
 
-        // DB 검증 (1개의 좋아요 기록)
+        // LikeService는 이미 찜한 경우 예외를 던지지 않고 조용히 return함
+        // → 100번 중 성공(return 포함)과 락 타임아웃만 존재, 예상치 못한 실패는 없어야 함
+        assertThat(unexpectedFailCount.get()).isEqualTo(0);
+        assertThat(successCount.get() + lockTimeoutCount.get()).isEqualTo(100);
+
+        // DB 정합성: 동일 사용자의 중복 찜은 막혀야 함
         long likeCount = likeRepository.count();
         assertThat(likeCount).isEqualTo(1);
 
-        // 상품의 좋아요 카운트가 1이어야 함
         Product updatedProduct = productRepository.findById(productId).orElseThrow();
         assertThat(updatedProduct.getLikeCount()).isEqualTo(1);
     }

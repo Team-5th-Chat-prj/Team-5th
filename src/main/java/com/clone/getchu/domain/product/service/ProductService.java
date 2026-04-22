@@ -12,6 +12,8 @@ import com.clone.getchu.global.common.CursorPageResponse;
 import com.clone.getchu.global.exception.BusinessException;
 import com.clone.getchu.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,11 @@ public class ProductService {
         Member seller = memberRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
+        // 동네 인증 없이는 상품 등록 불가 — 위치 정보가 없으면 근처 상품 기능이 동작하지 않음
+        if (seller.getLocation() == null) {
+            throw new BusinessException(ErrorCode.LOCATION_NOT_VERIFIED);
+        }
+
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
@@ -41,6 +48,8 @@ public class ProductService {
                 .title(request.title())
                 .description(request.description())
                 .price(request.price())
+                .location(seller.getLocation())
+                .locationName(seller.getLocationName())
                 .status(ProductEnum.SALE)
                 .build();
 
@@ -141,5 +150,30 @@ public class ProductService {
             );
         }
         return cond;
+    }
+
+    /**
+     * 내 동네 기반 근처 상품 목록 조회 — 거리 오름차순, 페이지당 20개
+     * 로그인한 회원의 인증된 위치(DB)와 설정된 반경을 사용하여 클라이언트 좌표 조작을 방지
+     */
+    public Page<NearbyProductResponse> getNearbyProducts(Long memberId, Pageable pageable) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (member.getLocation() == null) {
+            throw new BusinessException(ErrorCode.LOCATION_NOT_VERIFIED);
+        }
+
+        double lng = member.getLocation().getX();
+        double lat = member.getLocation().getY();
+        double radiusMeters = member.getLocationRadius() * 1000.0;
+
+        Page<NearbyProductRow> rawPage = productRepository.findNearbyProducts(lng, lat, radiusMeters, pageable);
+
+        List<NearbyProductResponse> content = rawPage.getContent().stream()
+                .map(NearbyProductResponse::from)
+                .toList();
+
+        return new PageImpl<>(content, pageable, rawPage.getTotalElements());
     }
 }

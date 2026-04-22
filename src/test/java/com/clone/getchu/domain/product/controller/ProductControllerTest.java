@@ -76,6 +76,7 @@ class ProductControllerTest {
                 "거의 새거에요",
                 1000000,
                 ProductEnum.SALE,
+                0,
                 "디지털기기",
                 "애플매니아",
                 List.of("url1", "url2"),
@@ -101,7 +102,7 @@ class ProductControllerTest {
     void getProducts_Success() throws Exception {
         // given
         ProductListResponse listResponse = new ProductListResponse(
-                1L, "제목", 10000, ProductEnum.SALE, "thumb.jpg", LocalDateTime.now()
+                1L, "제목", 10000, ProductEnum.SALE, "thumb.jpg", 0, LocalDateTime.now()
         );
         CursorPageResponse<ProductListResponse> pageResponse = new CursorPageResponse<>(
                 List.of(listResponse), "next-cursor-123", false
@@ -130,6 +131,7 @@ class ProductControllerTest {
                 "상품 상세 설명입니다.",
                 15000,
                 ProductEnum.SALE,
+                0,
                 "전자기기",
                 "판매자닉네임",
                 List.of("https://image1.com", "https://image2.com"),
@@ -158,6 +160,7 @@ class ProductControllerTest {
                 "수정된 상세 설명입니다.",
                 1200000,
                 ProductEnum.RESERVED,
+                0,
                 "디지털기기",
                 "판매자닉네임",
                 List.of("https://image.com/new.jpg"),
@@ -219,6 +222,7 @@ class ProductControllerTest {
                 50000,
                 ProductEnum.SALE,
                 "https://image.com/thumb1.jpg",
+                0,
                 now
         );
 

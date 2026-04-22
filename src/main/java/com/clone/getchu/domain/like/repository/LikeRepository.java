@@ -20,8 +20,8 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
             @Param("memberId") Long memberId);
 
     // 내 찜 목록 페이징 조회
-    @Query(value = "SELECT l FROM Like l JOIN FETCH l.product WHERE l.member.id = :memberId",
-            countQuery = "SELECT COUNT(l) FROM Like l WHERE l.member.id = :memberId")
+    @Query(value = "SELECT l FROM Like l JOIN FETCH l.product WHERE l.member.id = :memberId AND l.isDeleted = false",
+            countQuery = "SELECT COUNT(l) FROM Like l WHERE l.member.id = :memberId AND l.isDeleted = false")
     Page<Like> findAllByMemberId(Long memberId, Pageable pageable);
 
     //상품의 찜 수 증가
