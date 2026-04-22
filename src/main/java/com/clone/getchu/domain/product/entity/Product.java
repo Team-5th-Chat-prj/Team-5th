@@ -123,11 +123,6 @@ public class Product extends BaseEntity {
         if (this.likeCount > 0) this.likeCount--;
     }
 
-    public void updateLocation(Point location, String locationName) {
-        this.location = location;
-        this.locationName = locationName;
-    }
-
     public void softDelete() {
         this.isDeleted = true;
     }

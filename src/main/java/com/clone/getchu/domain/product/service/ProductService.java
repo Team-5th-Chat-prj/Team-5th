@@ -54,8 +54,6 @@ public class ProductService {
                 .build();
 
         product.updateImages(request.imageUrls());
-        // 판매자의 현재 인증된 위치를 상품에 복사 — 상품은 등록 당시 동네 기준으로 노출됨
-        product.updateLocation(seller.getLocation(), seller.getLocationName());
 
         productRepository.save(product);
         return ProductResponse.from(product);
@@ -170,7 +168,7 @@ public class ProductService {
         double lat = member.getLocation().getY();
         double radiusMeters = member.getLocationRadius() * 1000.0;
 
-        Page<Object[]> rawPage = productRepository.findNearbyProducts(lng, lat, radiusMeters, pageable);
+        Page<NearbyProductRow> rawPage = productRepository.findNearbyProducts(lng, lat, radiusMeters, pageable);
 
         List<NearbyProductResponse> content = rawPage.getContent().stream()
                 .map(NearbyProductResponse::from)

@@ -2,6 +2,7 @@ package com.clone.getchu.domain.product.service;
 
 import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.product.dto.NearbyProductResponse;
+import com.clone.getchu.domain.product.dto.NearbyProductRow;
 import com.clone.getchu.domain.product.entity.ProductEnum;
 import com.clone.getchu.domain.product.repository.ProductRepository;
 import com.clone.getchu.global.exception.BusinessException;
@@ -57,7 +58,7 @@ class NearbyProductServiceTest {
 
     private Member mockMemberWithLocation() {
         Member member = mock(Member.class);
-        Point point = GF.createPoint(new Coordinate(LNG, LAT)); // x=lng, y=lat
+        Point point = GF.createPoint(new Coordinate(LNG, LAT));
         given(member.getLocation()).willReturn(point);
         given(member.getLocationRadius()).willReturn(RADIUS_KM);
         return member;
@@ -69,18 +70,20 @@ class NearbyProductServiceTest {
         return member;
     }
 
-    /**
-     * Object[] 컬럼 순서: id, title, price, status, categoryName, sellerNickname,
-     *                     thumbnailUrl, locationName, distanceMeters, lat, lng
-     */
-    private Object[] productRow(long id, String title, double distanceMeters) {
-        return new Object[]{
-                id, title, 10000, ProductEnum.SALE.name(),
-                "전자기기", "seller" + id,
-                "https://cdn.example.com/img" + id + ".jpg",
-                "마포구 합정동",
-                distanceMeters, LAT, LNG
-        };
+    private NearbyProductRow mockRow(long id, String title, double distanceMeters) {
+        NearbyProductRow row = mock(NearbyProductRow.class);
+        given(row.getId()).willReturn(id);
+        given(row.getTitle()).willReturn(title);
+        given(row.getPrice()).willReturn(10000);
+        given(row.getStatus()).willReturn(ProductEnum.SALE.name());
+        given(row.getCategoryName()).willReturn("전자기기");
+        given(row.getSellerNickname()).willReturn("seller" + id);
+        given(row.getThumbnailUrl()).willReturn("https://cdn.example.com/img" + id + ".jpg");
+        given(row.getLocationName()).willReturn("마포구 합정동");
+        given(row.getDistanceMeters()).willReturn(distanceMeters);
+        given(row.getLat()).willReturn(LAT);
+        given(row.getLng()).willReturn(LNG);
+        return row;
     }
 
     // ── 테스트 ─────────────────────────────────────────────────────────────────
@@ -90,10 +93,7 @@ class NearbyProductServiceTest {
     void getNearbyProducts_returnsOnlyMatchingProducts() {
         // given
         given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
-        List<Object[]> rows = List.of(
-                productRow(1L, "상품A", 500.0),
-                productRow(2L, "상품B", 1200.0)
-        );
+        List<NearbyProductRow> rows = List.of(mockRow(1L, "상품A", 500.0), mockRow(2L, "상품B", 1200.0));
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(new PageImpl<>(rows, PAGEABLE, 2));
 
@@ -112,10 +112,10 @@ class NearbyProductServiceTest {
     void getNearbyProducts_preservesDistanceOrder() {
         // given — 가까운 순서: id=3(100m), id=1(800m), id=2(2500m)
         given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
-        List<Object[]> rows = List.of(
-                productRow(3L, "상품3", 100.0),
-                productRow(1L, "상품1", 800.0),
-                productRow(2L, "상품2", 2500.0)
+        List<NearbyProductRow> rows = List.of(
+                mockRow(3L, "상품3", 100.0),
+                mockRow(1L, "상품1", 800.0),
+                mockRow(2L, "상품2", 2500.0)
         );
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(new PageImpl<>(rows, PAGEABLE, 3));
@@ -133,10 +133,7 @@ class NearbyProductServiceTest {
     void getNearbyProducts_distanceConvertedCorrectly() {
         // given — 1234m → 1.2km (반올림), 567m → 0.6km
         given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
-        List<Object[]> rows = List.of(
-                productRow(1L, "상품1", 1234.0),
-                productRow(2L, "상품2", 567.0)
-        );
+        List<NearbyProductRow> rows = List.of(mockRow(1L, "상품1", 1234.0), mockRow(2L, "상품2", 567.0));
         given(productRepository.findNearbyProducts(anyDouble(), anyDouble(), anyDouble(), eq(PAGEABLE)))
                 .willReturn(new PageImpl<>(rows, PAGEABLE, 2));
 
@@ -179,7 +176,7 @@ class NearbyProductServiceTest {
     }
 
     @Test
-    @DisplayName("회원의 lng, lat, locationRadius가 repository에 올바르게 전달된다")
+    @DisplayName("lng, lat, locationRadius가 repository에 올바르게 전달된다")
     void getNearbyProducts_passesCorrectParamsToRepository() {
         // given
         given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(mockMemberWithLocation()));
@@ -189,12 +186,7 @@ class NearbyProductServiceTest {
         // when
         productService.getNearbyProducts(MEMBER_ID, PAGEABLE);
 
-        // then — 경도(lng), 위도(lat), 반경(meters) 순서로 전달
-        verify(productRepository).findNearbyProducts(
-                eq(LNG),
-                eq(LAT),
-                eq((double) RADIUS_KM * 1000),
-                eq(PAGEABLE)
-        );
+        // then
+        verify(productRepository).findNearbyProducts(eq(LNG), eq(LAT), eq((double) RADIUS_KM * 1000), eq(PAGEABLE));
     }
 }
