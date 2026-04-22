@@ -1,6 +1,6 @@
 # 05. ERD (Entity Relationship Diagram)
 
-> **버전**: v2.0
+> **버전**: v2.1 (Lettuce 분산락 반영 및 찜 수 정책 수정)
 > **표기법**: Mermaid ERD
 >
 > **개념 정의**: `PRODUCT` = 중고 판매글(Listing). 카탈로그 상품이 아님. 판매자가 올린 "이 물건을 팝니다" 게시글 1건 = PRODUCT 1건.
@@ -229,9 +229,10 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 
 - PRODUCT 테이블에 `like_count` 컬럼을 두어 목록 조회 시 JOIN 없이 찜 수 표시
 - 정합성 허용 오차 ±1 수준 (실시간 정확도 불필요)
-- **구현 정책**: `LikeRepository.incrementLikeCount()` / `decrementLikeCount()` 형태의 **JPQL 벌크 업데이트** 사용. JPA dirty checking으로 엔티티를 읽어 수정하면 lost update 위험이 있으므로 금지
+- **구현 정책**: `product.incrementLikeCount()` / `decrementLikeCount()` 호출을 통한 **Dirty Checking** 방식 채택.
+- **동시성 보장**: JPA Dirty Checking은 갱신 손실(Lost Update) 위험이 있으나, 본 프로젝트는 `LikeFacade`에서 **Lettuce 분산락(Redis)**을 사용하여 상품 단위의 원자적 연산을 보장함.
 - **LIKES Soft Delete**: `@SQLDelete`로 DELETE 시 `is_deleted = true`로 변경, `@Where(clause = "is_deleted = false")`로 조회 필터링. 재찜 시 `restore()`로 `is_deleted = false` 복원
-- **동시성 제어**: `LikeFacade`에서 Redisson 분산락으로 중복 찜/취소 방지
+- **동시성 제어**: `LikeFacade`에서 Lettuce 분산락으로 중복 찜/취소 방지 및 정합성 확보.
 
 ### 2-5-1. MEMBER.review_count 비정규화
 
