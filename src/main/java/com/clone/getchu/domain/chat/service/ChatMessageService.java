@@ -46,8 +46,9 @@ public class ChatMessageService {
                 .build();
         chatMessageRepository.save(message);
 
-        // lastMessageAt 갱신 & 메시지가 오면 양쪽 참여자에게 채팅방을 다시 노출
         chatRoom.updateLastMessageAt(LocalDateTime.now());
+        // 판매자는 상품 페이지를 통해서만 채팅방 재진입이 가능하므로,
+        // 새 메시지 수신 시 나간 참여자도 채팅방이 다시 보이도록 양쪽 모두 복원 (카카오톡 방식)
         chatRoom.reopenForParticipants();
 
         // STOMP 브로드캐스트 → /topic/room.{chatRoomId}
