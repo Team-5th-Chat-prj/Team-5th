@@ -15,7 +15,6 @@ class XxxControllerTest extends RestDocsSupport {
     // ── 필수 MockBean (모든 테스트 클래스에 공통으로 필요) ──────────────────
     @MockBean private RedisConnectionFactory redisConnectionFactory;
     @MockBean private StringRedisTemplate stringRedisTemplate;
-    @MockBean private RedissonClient redissonClient;
     @MockBean private JwtAuthFilter jwtAuthFilter;
     @MockBean private JwtAuthEntryPoint jwtAuthEntryPoint;
     @MockBean private JwtAccessDeniedHandler jwtAccessDeniedHandler;
@@ -120,7 +119,7 @@ void methodName() throws Exception {
                             // 응답 바디
                             .responseSchema(Schema.schema("XxxResponse"))
                             .responseFields(
-                                    fieldWithPath("code").type(JsonFieldType.STRING).description("응답 코드 (SUCCESS)"),
+                                    fieldWithPath("code").type(JsonFieldType.STRING).description("응답 코드 (SUCCESS 또는 에러코드 예: M001)"),
                                     fieldWithPath("message").type(JsonFieldType.STRING).description("응답 메시지"),
                                     fieldWithPath("data.id").type(JsonFieldType.NUMBER).description("ID")
                             )
@@ -233,7 +232,7 @@ ResourceSnippetParameters.builder()
 
 ```java
 .responseFields(
-    fieldWithPath("code").type(JsonFieldType.STRING).description("응답 코드 (SUCCESS)"),
+    fieldWithPath("code").type(JsonFieldType.STRING).description("응답 코드 (SUCCESS 또는 에러코드)"),
     fieldWithPath("message").type(JsonFieldType.STRING).description("처리 결과 메시지")
     // data 필드는 null이므로 responseFields에 작성하지 않음
 )

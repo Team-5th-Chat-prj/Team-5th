@@ -1,7 +1,6 @@
 # 06. API 명세서
 
 > **버전**: v3.0 (위치 API 추가 — 동네 인증·근처 상품 조회, 에러코드 전체 정합성 수정)
-> **Base URL**: `https://api.marketplace.com/api/v1`
 > **인증**: `Authorization: Bearer {AccessToken}` (🔒 표시 API)
 
 ---
@@ -24,11 +23,13 @@
 
 ```json
 {
-  "code": "ERROR_CODE",
-  "message": "에러 설명",
+  "code": "M001",
+  "message": "존재하지 않는 회원입니다.",
   "timestamp": "2025-06-01T10:00:00"
 }
 ```
+
+> `retryAfter` 필드: `ALREADY_RESERVED`, `LOCK_TIMEOUT` 에러 시에만 선택적으로 포함됨.
 
 ### 유효성 오류 응답
 
@@ -129,7 +130,7 @@
 
 | Method | URI | 설명 | 인증 |
 |--------|-----|------|------|
-| GET | `/search/popular` | 인기 검색어 TOP 10 | ❌ |
+| GET | `/search/popular` | 인기 검색어 TOP 10 (Redis ZSET) | ❌ |
 
 ---
 
@@ -433,10 +434,10 @@
 
 | 파라미터 | 타입 | 필수 | 설명 |
 |----------|------|------|------|
-| keyword | String | ❌ | 제목 검색어 |
-| categoryId | Long | ❌ | 카테고리 ID |
-| status | String | ❌ | SALE / RESERVED / SOLD_OUT |
-| cursor | String | ❌ | 마지막 항목의 커서값 (없으면 첫 페이지) |
+| keyword | String | ❌ | 제목 검색어 (검색 시 Redis 점수 반영) |
+| categoryId | Long | ❌ | 카테고리 ID (Caffeine 캐시 활용) |
+| status | String | ❌ | SALE / RESERVED / SOLD / TRADING |
+| cursor | Long | ❌ | 마지막 항목의 ID (없으면 첫 페이지) |
 | size | Integer | ❌ | 기본값 20 |
 
 **Response 200**:
