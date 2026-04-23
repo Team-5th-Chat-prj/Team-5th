@@ -7,11 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+// MySQL TEXT 컬럼은 UNIQUE 인덱스 불가 → UniqueConstraint 미적용, 중복 방지는 서비스 레이어에서 처리
 @Table(name = "PRODUCT_IMAGE")
-//        , uniqueConstraints = {
-//                @UniqueConstraint(
-//                        name = "uk_product_image_url",
-//                        columnNames = {"product_id", "imageUrl"}
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductImage extends BaseEntity {
