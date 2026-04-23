@@ -46,9 +46,9 @@ public class ChatMessageService {
                 .build();
         chatMessageRepository.save(message);
 
-        // lastMessageAt 갱신 & 메시지를 보낸 사람의 퇴장 상태만 복구
+        // lastMessageAt 갱신 & 메시지가 오면 양쪽 참여자에게 채팅방을 다시 노출
         chatRoom.updateLastMessageAt(LocalDateTime.now());
-        chatRoom.reenterRoom(senderId);
+        chatRoom.reopenForParticipants();
 
         // STOMP 브로드캐스트 → /topic/room.{chatRoomId}
         ChatMessageResponse response = ChatMessageResponse.from(message);
