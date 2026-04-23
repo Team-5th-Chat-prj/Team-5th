@@ -1,7 +1,10 @@
 package com.clone.getchu.domain.trade.controller;
 
 import com.clone.getchu.domain.trade.dto.request.TradeStatusUpdateRequest;
+import com.clone.getchu.domain.trade.dto.response.GetAllTradeResponse;
+import com.clone.getchu.domain.trade.dto.response.GetTradeDetailResponse;
 import com.clone.getchu.domain.trade.dto.response.TradeReserveResponse;
+import com.clone.getchu.domain.trade.enums.TradeRole;
 import com.clone.getchu.domain.trade.enums.TradeStatus;
 import com.clone.getchu.domain.trade.service.TradeFacade;
 import com.clone.getchu.domain.trade.service.TradeService;
@@ -25,16 +28,22 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import static com.epages.restdocs.apispec.ResourceDocumentation.headerWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.JsonFieldType.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.epages.restdocs.apispec.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @WebMvcTest(
         controllers = TradeController.class,
@@ -122,6 +131,101 @@ class TradeControllerTest {
                                 .summary("거래 상태 변경")
                                 .pathParameters(parameterWithName("tradeId").description("거래 ID"))
                                 .requestFields(fieldWithPath("status").description("변경할 상태 (RESERVED, TRADING, SOLD, SALE)"))
+                                .build())
+                ));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("거래 상세 조회 - GET /trades/{tradeId}")
+    void getTradeDetail() throws Exception {
+        // given
+        Long tradeId = 1L;
+        GetTradeDetailResponse response = new GetTradeDetailResponse(
+                "아이폰 17",
+                TradeStatus.TRADING,
+                1000000,
+                LocalDateTime.of(2024, 1, 1, 10, 0),
+                null,
+                "판매자닉네임",
+                "구매자닉네임"
+        );
+        given(tradeService.getTradeDetail(eq(tradeId), any())).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/trades/{tradeId}", tradeId)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.productTitle").value("아이폰 17"))
+                .andExpect(jsonPath("$.data.status").value("TRADING"))
+                .andDo(MockMvcRestDocumentationWrapper.document(
+                        "trade/get-trade-detail",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Trade")
+                                .summary("거래 상세 조회")
+                                .description("특정 거래의 상세 정보를 조회합니다. 거래 당사자(판매자/구매자)만 조회 가능합니다.")
+                                .pathParameters(parameterWithName("tradeId").description("거래 ID"))
+                                .responseSchema(Schema.schema("GetTradeDetailResponse"))
+                                .responseFields(
+                                        fieldWithPath("code").type(STRING).description("응답 코드 (SUCCESS)"),
+                                        fieldWithPath("message").type(STRING).description("응답 메시지").optional(),
+                                        fieldWithPath("data.productTitle").type(STRING).description("상품명"),
+                                        fieldWithPath("data.status").type(STRING).description("거래 상태 (RESERVED / TRADING / SOLD / REVIEWED)"),
+                                        fieldWithPath("data.price").type(NUMBER).description("거래 금액"),
+                                        fieldWithPath("data.productCreatedAt").type(STRING).description("상품 게시일"),
+                                        fieldWithPath("data.soldAt").type(STRING).description("거래 완료일 (미완료 시 null)").optional(),
+                                        fieldWithPath("data.sellerNickname").type(STRING).description("판매자 닉네임"),
+                                        fieldWithPath("data.buyerNickname").type(STRING).description("구매자 닉네임")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("내 거래 목록 조회 - GET /members/me/trades")
+    void getMyTrades() throws Exception {
+        // given
+        List<GetAllTradeResponse> responses = List.of(
+                new GetAllTradeResponse(
+                        1L,
+                        "아이폰 17",
+                        10L,
+                        1000000,
+                        TradeStatus.TRADING,
+                        LocalDateTime.of(2024, 6, 1, 12, 0)
+                )
+        );
+        given(tradeService.getMyTrade(any(), eq(TradeRole.BUYER))).willReturn(responses);
+
+        // when & then
+        mockMvc.perform(get("/members/me/trades")
+                        .param("role", "BUYER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data[0].tradeId").value(1L))
+                .andExpect(jsonPath("$.data[0].productTitle").value("아이폰 17"))
+                .andDo(MockMvcRestDocumentationWrapper.document(
+                        "trade/get-my-trades",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Trade")
+                                .summary("내 거래 목록 조회")
+                                .description("로그인한 회원의 거래 목록을 역할(BUYER/SELLER)별로 조회합니다.")
+                                .queryParameters(
+                                        parameterWithName("role").description("조회할 역할 (BUYER: 구매 내역, SELLER: 판매 내역)")
+                                )
+                                .responseSchema(Schema.schema("GetAllTradeResponse"))
+                                .responseFields(
+                                        fieldWithPath("code").type(STRING).description("응답 코드 (SUCCESS)"),
+                                        fieldWithPath("message").type(STRING).description("응답 메시지").optional(),
+                                        fieldWithPath("data[].tradeId").type(NUMBER).description("거래 ID"),
+                                        fieldWithPath("data[].productTitle").type(STRING).description("상품명"),
+                                        fieldWithPath("data[].productId").type(NUMBER).description("상품 ID"),
+                                        fieldWithPath("data[].price").type(NUMBER).description("거래 금액"),
+                                        fieldWithPath("data[].status").type(STRING).description("거래 상태"),
+                                        fieldWithPath("data[].updatedAt").type(STRING).description("상태 마지막 변경일시")
+                                )
                                 .build())
                 ));
     }

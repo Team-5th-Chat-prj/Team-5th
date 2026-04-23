@@ -7,15 +7,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-        name = "PRODUCT_IMAGE",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_product_image_url",
-                        columnNames = {"product_id", "imageUrl"}
-                )
-        }
-)
+@Table(name = "PRODUCT_IMAGE")
+//        , uniqueConstraints = {
+//                @UniqueConstraint(
+//                        name = "uk_product_image_url",
+//                        columnNames = {"product_id", "imageUrl"}
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductImage extends BaseEntity {
@@ -23,7 +19,7 @@ public class ProductImage extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)

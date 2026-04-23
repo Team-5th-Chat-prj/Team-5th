@@ -7,6 +7,126 @@ servers:
 - url: http://localhost:8080
 tags: []
 paths:
+  /api/products/nearby:
+    get:
+      tags:
+      - Product
+      summary: 근처 상품 목록 조회
+      description: |-
+        로그인한 회원의 인증된 동네 위치를 기준으로 반경 내 판매 중인 상품을 거리 오름차순으로 조회합니다.
+        동네 인증이 되어 있지 않으면 400을 반환합니다.
+      operationId: product/nearby-products
+      parameters:
+      - name: page
+        in: query
+        description: "페이지 번호 (0부터, 기본값 0)"
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NearbyProductResponse'
+              examples:
+                product/nearby-products:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"content\" : [ {\r\
+                    \n      \"id\" : 1,\r\n      \"title\" : \"중고 노트북 1\",\r\n   \
+                    \   \"price\" : 150000,\r\n      \"status\" : \"SALE\",\r\n  \
+                    \    \"categoryName\" : \"전자기기\",\r\n      \"sellerNickname\"\
+                    \ : \"판매자1\",\r\n      \"thumbnailUrl\" : \"https://cdn.example.com/img1.jpg\"\
+                    ,\r\n      \"locationName\" : \"마포구 합정동\",\r\n      \"distanceKm\"\
+                    \ : 0.5,\r\n      \"lat\" : 37.5328,\r\n      \"lng\" : 126.7247\r\
+                    \n    }, {\r\n      \"id\" : 2,\r\n      \"title\" : \"중고 노트북\
+                    \ 2\",\r\n      \"price\" : 150000,\r\n      \"status\" : \"SALE\"\
+                    ,\r\n      \"categoryName\" : \"전자기기\",\r\n      \"sellerNickname\"\
+                    \ : \"판매자2\",\r\n      \"thumbnailUrl\" : \"https://cdn.example.com/img2.jpg\"\
+                    ,\r\n      \"locationName\" : \"마포구 합정동\",\r\n      \"distanceKm\"\
+                    \ : 1.2,\r\n      \"lat\" : 37.5328,\r\n      \"lng\" : 126.7247\r\
+                    \n    } ],\r\n    \"pageable\" : {\r\n      \"pageNumber\" : 0,\r\
+                    \n      \"pageSize\" : 20,\r\n      \"sort\" : {\r\n        \"\
+                    empty\" : true,\r\n        \"sorted\" : false,\r\n        \"unsorted\"\
+                    \ : true\r\n      },\r\n      \"offset\" : 0,\r\n      \"paged\"\
+                    \ : true,\r\n      \"unpaged\" : false\r\n    },\r\n    \"totalElements\"\
+                    \ : 2,\r\n    \"totalPages\" : 1,\r\n    \"last\" : true,\r\n\
+                    \    \"size\" : 20,\r\n    \"number\" : 0,\r\n    \"sort\" : {\r\
+                    \n      \"empty\" : true,\r\n      \"sorted\" : false,\r\n   \
+                    \   \"unsorted\" : true\r\n    },\r\n    \"numberOfElements\"\
+                    \ : 2,\r\n    \"first\" : true,\r\n    \"empty\" : false\r\n \
+                    \ }\r\n}"
+  /api/location/verify/address:
+    post:
+      tags:
+      - Location
+      summary: 주소 기반 동네 인증
+      description: 주소 텍스트를 카카오 API로 좌표 변환 후 행정구역명으로 변환하여 동네를 인증합니다.
+      operationId: location/verify-address
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressVerifyRequest'
+            examples:
+              location/verify-address:
+                value: "{\r\n  \"address\" : \"서울 마포구 합정동\"\r\n}"
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationVerifyResponse'
+              examples:
+                location/verify-address:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"동네 인\
+                    증이 완료되었습니다.\",\r\n  \"data\" : {\r\n    \"locationName\" : \"마\
+                    포구 합정동\",\r\n    \"locationRadius\" : 3\r\n  }\r\n}"
+  /api/location/verify/gps:
+    post:
+      tags:
+      - Location
+      summary: GPS 기반 동네 인증
+      description: GPS 좌표를 카카오 API로 행정구역명으로 변환하여 회원의 동네를 인증합니다.
+      operationId: location/verify-gps
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GpsVerifyRequest'
+            examples:
+              location/verify-gps:
+                value: "{\r\n  \"lat\" : 37.549,\r\n  \"lng\" : 126.914\r\n}"
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationVerifyResponse'
+              examples:
+                location/verify-gps:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"동네 인\
+                    증이 완료되었습니다.\",\r\n  \"data\" : {\r\n    \"locationName\" : \"마\
+                    포구 합정동\",\r\n    \"locationRadius\" : 3\r\n  }\r\n}"
   /members/me:
     get:
       tags:
@@ -36,7 +156,7 @@ paths:
                     \   \"email\" : \"test@email.com\",\r\n    \"nickname\" : \"테스\
                     트유저\",\r\n    \"profileImageUrl\" : \"https://example.com/profile.jpg\"\
                     ,\r\n    \"averageRating\" : 4.5,\r\n    \"reviewCount\" : 10,\r\
-                    \n    \"createdAt\" : \"2026-04-16T20:13:20.8683118\"\r\n  }\r\
+                    \n    \"createdAt\" : \"2026-04-22T21:16:36.0397098\"\r\n  }\r\
                     \n}"
     delete:
       tags:
@@ -132,6 +252,65 @@ paths:
                     https://cdn.example.com/other.jpg\",\r\n    \"averageRating\"\
                     \ : 4.2,\r\n    \"reviewCount\" : 7,\r\n    \"createdAt\" : \"\
                     2024-03-15T00:00:00\"\r\n  }\r\n}"
+  /members/me/likes:
+    get:
+      tags:
+      - Like
+      summary: 내 찜 목록 조회
+      description: 사용자가 찜한 상품 목록을 페이징하여 조회합니다.
+      operationId: like/my-likes
+      parameters:
+      - name: page
+        in: query
+        description: 페이지 번호 (0부터 시작)
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: 페이지 크기 (기본값 10)
+        required: false
+        schema:
+          type: string
+      - name: sort
+        in: query
+        description: "정렬 옵션 (기본값 createdAt,desc)"
+        required: false
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyLikesResponse'
+              examples:
+                like/my-likes:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"content\" : [ {\r\
+                    \n      \"id\" : 1,\r\n      \"title\" : \"아이폰 17\",\r\n     \
+                    \ \"price\" : 1000000,\r\n      \"status\" : \"SALE\",\r\n   \
+                    \   \"thumbnailUrl\" : \"https://image.url/test.jpg\",\r\n   \
+                    \   \"likeCount\" : 0,\r\n      \"createdAt\" : \"2026-04-22T21:16:12.2610414\"\
+                    \r\n    } ],\r\n    \"pageable\" : {\r\n      \"pageNumber\" :\
+                    \ 0,\r\n      \"pageSize\" : 10,\r\n      \"sort\" : {\r\n   \
+                    \     \"empty\" : true,\r\n        \"sorted\" : false,\r\n   \
+                    \     \"unsorted\" : true\r\n      },\r\n      \"offset\" : 0,\r\
+                    \n      \"paged\" : true,\r\n      \"unpaged\" : false\r\n   \
+                    \ },\r\n    \"totalElements\" : 1,\r\n    \"totalPages\" : 1,\r\
+                    \n    \"last\" : true,\r\n    \"size\" : 10,\r\n    \"number\"\
+                    \ : 0,\r\n    \"sort\" : {\r\n      \"empty\" : true,\r\n    \
+                    \  \"sorted\" : false,\r\n      \"unsorted\" : true\r\n    },\r\
+                    \n    \"numberOfElements\" : 1,\r\n    \"first\" : true,\r\n \
+                    \   \"empty\" : false\r\n  }\r\n}"
   /members/me/password:
     patch:
       tags:
@@ -210,16 +389,132 @@ paths:
                 review/get-reviews:
                   value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
                     \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"content\" : [ {\r\
-                    \n      \"id\" : 2,\r\n      \"rating\" : 4.5,\r\n      \"content\"\
-                    \ : \"친절하고 물건도 좋았습니다.\",\r\n      \"createdAt\" : \"2024-06-10T14:00:00\"\
-                    ,\r\n      \"reviewerNickname\" : \"구매자닉네임\",\r\n      \"reviewerProfileImageUrl\"\
-                    \ : \"https://cdn.example.com/buyer.jpg\",\r\n      \"productTitle\"\
-                    \ : \"아이폰 15 팝니다\"\r\n    }, {\r\n      \"id\" : 1,\r\n      \"\
-                    rating\" : 3.5,\r\n      \"content\" : \"무난한 거래였습니다.\",\r\n  \
-                    \    \"createdAt\" : \"2024-05-20T09:30:00\",\r\n      \"reviewerNickname\"\
-                    \ : \"다른구매자\",\r\n      \"reviewerProfileImageUrl\" : null,\r\n\
-                    \      \"productTitle\" : \"맥북 에어 M2\"\r\n    } ],\r\n    \"nextCursor\"\
+                    \n      \"id\" : 2,\r\n      \"reviewerId\" : 10,\r\n      \"\
+                    rating\" : 4.5,\r\n      \"content\" : \"친절하고 물건도 좋았습니다.\",\r\n\
+                    \      \"createdAt\" : \"2024-06-10T14:00:00\",\r\n      \"reviewerNickname\"\
+                    \ : \"구매자닉네임\",\r\n      \"reviewerProfileImageUrl\" : \"https://cdn.example.com/buyer.jpg\"\
+                    ,\r\n      \"productTitle\" : \"아이폰 15 팝니다\"\r\n    }, {\r\n \
+                    \     \"id\" : 1,\r\n      \"reviewerId\" : 11,\r\n      \"rating\"\
+                    \ : 3.5,\r\n      \"content\" : \"무난한 거래였습니다.\",\r\n      \"createdAt\"\
+                    \ : \"2024-05-20T09:30:00\",\r\n      \"reviewerNickname\" : \"\
+                    다른구매자\",\r\n      \"reviewerProfileImageUrl\" : null,\r\n    \
+                    \  \"productTitle\" : \"맥북 에어 M2\"\r\n    } ],\r\n    \"nextCursor\"\
                     \ : \"eyJpZCI6MX0=\",\r\n    \"hasNext\" : true\r\n  }\r\n}"
+  /members/{memberId}/reviews/written:
+    get:
+      tags:
+      - Review
+      summary: 작성한 리뷰 목록 조회
+      description: |
+        특정 회원이 작성한 리뷰 목록을 커서 기반 페이지네이션으로 조회합니다.
+        - 비로그인 상태에서도 조회 가능합니다.
+        - 최신 리뷰가 먼저 반환됩니다.
+        - 다음 페이지 조회 시 응답의 nextCursor 값을 cursor 파라미터로 전달합니다.
+      operationId: review/get-written-reviews
+      parameters:
+      - name: memberId
+        in: path
+        description: 리뷰를 조회할 회원 ID
+        required: true
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        description: 페이지 커서 (첫 페이지는 생략)
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "페이지 크기 (기본값: 10)"
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+              examples:
+                review/get-written-reviews:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\",\r\n  \"data\" : {\r\n    \"content\" : [ {\r\
+                    \n      \"id\" : 2,\r\n      \"reviewerId\" : 10,\r\n      \"\
+                    rating\" : 4.5,\r\n      \"content\" : \"친절하고 물건도 좋았습니다.\",\r\n\
+                    \      \"createdAt\" : \"2024-06-10T14:00:00\",\r\n      \"reviewerNickname\"\
+                    \ : \"구매자닉네임\",\r\n      \"reviewerProfileImageUrl\" : \"https://cdn.example.com/buyer.jpg\"\
+                    ,\r\n      \"productTitle\" : \"아이폰 15 팝니다\"\r\n    }, {\r\n \
+                    \     \"id\" : 1,\r\n      \"reviewerId\" : 11,\r\n      \"rating\"\
+                    \ : 3.5,\r\n      \"content\" : \"무난한 거래였습니다.\",\r\n      \"createdAt\"\
+                    \ : \"2024-05-20T09:30:00\",\r\n      \"reviewerNickname\" : \"\
+                    다른구매자\",\r\n      \"reviewerProfileImageUrl\" : null,\r\n    \
+                    \  \"productTitle\" : \"맥북 에어 M2\"\r\n    } ],\r\n    \"nextCursor\"\
+                    \ : \"eyJpZCI6MX0=\",\r\n    \"hasNext\" : true\r\n  }\r\n}"
+  /products/{productId}/likes:
+    post:
+      tags:
+      - Like
+      summary: 상품 찜하기
+      description: 특정 상품을 찜 목록에 추가합니다.
+      operationId: like/create-like
+      parameters:
+      - name: productId
+        in: path
+        description: 상품 ID
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateLikeResponse'
+              examples:
+                like/create-like:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\"\r\n}"
+    delete:
+      tags:
+      - Like
+      summary: 상품 찜 취소
+      description: 특정 상품을 찜 목록에서 제거합니다.
+      operationId: like/delete-like
+      parameters:
+      - name: productId
+        in: path
+        description: 상품 ID
+        required: true
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        description: Bearer JWT 액세스 토큰
+        required: true
+        schema:
+          type: string
+        example: Bearer test-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteLikeResponse'
+              examples:
+                like/delete-like:
+                  value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
+                    \ 성공적으로 처리되었습니다.\"\r\n}"
   /trades/{tradeId}/reviews:
     post:
       tags:
@@ -264,21 +559,41 @@ paths:
                 review/create-review:
                   value: "{\r\n  \"code\" : \"SUCCESS\",\r\n  \"message\" : \"요청이\
                     \ 성공적으로 처리되었습니다.\"\r\n}"
+  /trades/{tradeId}/status:
+    patch:
+      tags:
+      - Trade
+      summary: 거래 상태 변경
+      description: 거래 상태 변경
+      operationId: trade/update-status
+      parameters:
+      - name: tradeId
+        in: path
+        description: 거래 ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: '#/components/schemas/trades-tradeId-status1569848466'
+            examples:
+              trade/update-status:
+                value: "{\"status\":\"TRADING\"}"
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/trades-tradeId-status486549215'
+              examples:
+                trade/update-status:
+                  value: "{\"code\":\"SUCCESS\",\"message\":\"요청이 성공적으로 처리되었습니다.\"\
+                    }"
 components:
   schemas:
-    DeleteMemberResponse:
-      title: DeleteMemberResponse
-      required:
-      - code
-      - message
-      type: object
-      properties:
-        code:
-          type: string
-          description: 응답 코드 (SUCCESS)
-        message:
-          type: string
-          description: '"회원탈퇴가 완료되었습니다."'
     MemberProfileResponse:
       title: MemberProfileResponse
       required:
@@ -320,19 +635,74 @@ components:
         message:
           type: string
           description: 응답 메시지
-    UpdatePasswordRequest:
-      title: UpdatePasswordRequest
+    trades-tradeId-status1569848466:
       required:
-      - newPassword
-      - oldPassword
+      - status
       type: object
       properties:
-        oldPassword:
+        status:
           type: string
-          description: 현재 비밀번호
-        newPassword:
+          description: "변경할 상태 (RESERVED, TRADING, SOLD, SALE)"
+    AddressVerifyRequest:
+      title: AddressVerifyRequest
+      required:
+      - address
+      type: object
+      properties:
+        address:
           type: string
-          description: "새 비밀번호 (8자 이상, 영문·숫자·특수문자 각 1자 이상 포함)"
+          description: 인증할 주소 텍스트 (최대 200자)
+    LocationVerifyResponse:
+      title: LocationVerifyResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        data:
+          required:
+          - locationName
+          - locationRadius
+          type: object
+          properties:
+            locationRadius:
+              type: number
+              description: 근처 상품 조회 반경 km (기본값 3)
+            locationName:
+              type: string
+              description: "인증된 행정동명 (예: 마포구 합정동)"
+        message:
+          type: string
+          description: 동네 인증이 완료되었습니다.
+    DeleteLikeResponse:
+      title: DeleteLikeResponse
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드
+        message:
+          type: string
+          description: 응답 메시지
+          nullable: true
+    ReviewRequest:
+      title: ReviewRequest
+      required:
+      - content
+      - rating
+      type: object
+      properties:
+        rating:
+          type: number
+          description: "평점 (0.5 ~ 5.0, 0.5 단위)"
+        content:
+          type: string
+          description: 리뷰 내용 (500자 이내)
     MemberResponse:
       title: MemberResponse
       required:
@@ -342,7 +712,7 @@ components:
       properties:
         code:
           type: string
-          description: 응답 코드
+          description: 응답 코드 (SUCCESS)
         data:
           required:
           - averageRating
@@ -364,13 +734,13 @@ components:
               description: 평균 평점
             nickname:
               type: string
-              description: 닉네임
+              description: 변경된 닉네임
             id:
               type: number
               description: 회원 ID
             profileImageUrl:
               type: string
-              description: 프로필 이미지 URL
+              description: 변경된 프로필 이미지 URL
               nullable: true
             email:
               type: string
@@ -378,57 +748,19 @@ components:
         message:
           type: string
           description: 응답 메시지
-    UpdatePasswordResponse:
-      title: UpdatePasswordResponse
+    CreateLikeResponse:
+      title: CreateLikeResponse
       required:
       - code
-      - message
       type: object
       properties:
         code:
           type: string
-          description: 응답 코드 (SUCCESS)
-        message:
-          type: string
-          description: '"비밀번호가 변경되었습니다."'
-    ReviewRequest:
-      title: ReviewRequest
-      required:
-      - content
-      - rating
-      type: object
-      properties:
-        rating:
-          type: number
-          description: "평점 (0.5 ~ 5.0, 0.5 단위)"
-        content:
-          type: string
-          description: 리뷰 내용 (500자 이내)
-    MemberUpdateRequest:
-      title: MemberUpdateRequest
-      type: object
-      properties:
-        nickname:
-          type: string
-          description: 변경할 닉네임 (2~20자). null 전송 시 변경 없음
-          nullable: true
-        profileImageUrl:
-          type: string
-          description: "변경할 프로필 이미지 URL. \"\" 전송 시 이미지 삭제, null 전송 시 변경 없음"
-          nullable: true
-    ReviewCreateResponse:
-      title: ReviewCreateResponse
-      required:
-      - code
-      - message
-      type: object
-      properties:
-        code:
-          type: string
-          description: 응답 코드 (SUCCESS)
+          description: 응답 코드
         message:
           type: string
           description: 응답 메시지
+          nullable: true
     ReviewListResponse:
       title: ReviewListResponse
       required:
@@ -460,6 +792,7 @@ components:
                 - id
                 - productTitle
                 - rating
+                - reviewerId
                 - reviewerNickname
                 type: object
                 properties:
@@ -469,6 +802,9 @@ components:
                   createdAt:
                     type: string
                     description: 작성 일시
+                  reviewerId:
+                    type: number
+                    description: 리뷰 작성자 회원 ID
                   reviewerNickname:
                     type: string
                     description: 리뷰 작성자 닉네임
@@ -488,3 +824,382 @@ components:
         message:
           type: string
           description: 응답 메시지
+    GpsVerifyRequest:
+      title: GpsVerifyRequest
+      required:
+      - lat
+      - lng
+      type: object
+      properties:
+        lng:
+          type: number
+          description: 경도 (-180.0 ~ 180.0)
+        lat:
+          type: number
+          description: 위도 (-90.0 ~ 90.0)
+    DeleteMemberResponse:
+      title: DeleteMemberResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        message:
+          type: string
+          description: '"회원탈퇴가 완료되었습니다."'
+    UpdatePasswordRequest:
+      title: UpdatePasswordRequest
+      required:
+      - newPassword
+      - oldPassword
+      type: object
+      properties:
+        oldPassword:
+          type: string
+          description: 현재 비밀번호
+        newPassword:
+          type: string
+          description: "새 비밀번호 (8자 이상, 영문·숫자·특수문자 각 1자 이상 포함)"
+    UpdatePasswordResponse:
+      title: UpdatePasswordResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        message:
+          type: string
+          description: '"비밀번호가 변경되었습니다."'
+    MemberUpdateRequest:
+      title: MemberUpdateRequest
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 변경할 닉네임 (2~20자). null 전송 시 변경 없음
+          nullable: true
+        profileImageUrl:
+          type: string
+          description: "변경할 프로필 이미지 URL. \"\" 전송 시 이미지 삭제, null 전송 시 변경 없음"
+          nullable: true
+    ReviewCreateResponse:
+      title: ReviewCreateResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        message:
+          type: string
+          description: 응답 메시지
+    MyLikesResponse:
+      title: MyLikesResponse
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드
+        data:
+          required:
+          - empty
+          - first
+          - last
+          - number
+          - numberOfElements
+          - size
+          - totalElements
+          - totalPages
+          type: object
+          properties:
+            number:
+              type: number
+              description: 현재 페이지 번호
+            numberOfElements:
+              type: number
+              description: 현재 페이지의 실제 요소 수
+            size:
+              type: number
+              description: 페이지 당 요소 수
+            last:
+              type: boolean
+              description: 마지막 페이지 여부
+            totalPages:
+              type: number
+              description: 전체 페이지 수
+            pageable:
+              required:
+              - offset
+              - pageNumber
+              - pageSize
+              - paged
+              - unpaged
+              type: object
+              properties:
+                paged:
+                  type: boolean
+                  description: 페이징 여부
+                pageNumber:
+                  type: number
+                  description: 현재 페이지 번호
+                offset:
+                  type: number
+                  description: 현재 페이지의 시작 오프셋
+                pageSize:
+                  type: number
+                  description: 페이지 크기
+                unpaged:
+                  type: boolean
+                  description: 비페이징 여부
+                sort:
+                  required:
+                  - empty
+                  - sorted
+                  - unsorted
+                  type: object
+                  properties:
+                    unsorted:
+                      type: boolean
+                      description: 정렬되지 않았는지 여부
+                    sorted:
+                      type: boolean
+                      description: 정렬되었는지 여부
+                    empty:
+                      type: boolean
+                      description: 정렬 정보가 비어있는지 여부
+            sort:
+              required:
+              - empty
+              - sorted
+              - unsorted
+              type: object
+              properties:
+                unsorted:
+                  type: boolean
+                  description: 정렬되지 않았는지 여부
+                sorted:
+                  type: boolean
+                  description: 정렬되었는지 여부
+                empty:
+                  type: boolean
+                  description: 정렬 정보가 비어있는지 여부
+            first:
+              type: boolean
+              description: 첫 페이지 여부
+            content:
+              type: array
+              items:
+                required:
+                - createdAt
+                - id
+                - likeCount
+                - price
+                - status
+                - title
+                type: object
+                properties:
+                  createdAt:
+                    type: string
+                    description: 상품 등록일시
+                  price:
+                    type: number
+                    description: 상품 가격
+                  likeCount:
+                    type: number
+                    description: 찜 수
+                  id:
+                    type: number
+                    description: 상품 ID
+                  title:
+                    type: string
+                    description: 상품 제목
+                  thumbnailUrl:
+                    type: string
+                    description: 상품 썸네일 URL
+                    nullable: true
+                  status:
+                    type: string
+                    description: 상품 상태
+            empty:
+              type: boolean
+              description: 데이터가 비어있는지 여부
+            totalElements:
+              type: number
+              description: 전체 요소 수
+        message:
+          type: string
+          description: 응답 메시지
+          nullable: true
+    NearbyProductResponse:
+      title: NearbyProductResponse
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+          description: 응답 코드 (SUCCESS)
+        data:
+          required:
+          - empty
+          - first
+          - last
+          - number
+          - numberOfElements
+          - pageable
+          - size
+          - sort
+          - totalElements
+          - totalPages
+          type: object
+          properties:
+            number:
+              type: number
+              description: 현재 페이지 번호
+            numberOfElements:
+              type: number
+              description: 현재 페이지 상품 수
+            size:
+              type: number
+              description: 페이지 크기
+            last:
+              type: boolean
+              description: 마지막 페이지 여부
+            totalPages:
+              type: number
+              description: 전체 페이지 수
+            pageable:
+              required:
+              - offset
+              - pageNumber
+              - pageSize
+              - paged
+              - sort
+              - unpaged
+              type: object
+              properties:
+                paged:
+                  type: boolean
+                  description: 페이지 적용 여부
+                pageNumber:
+                  type: number
+                  description: 현재 페이지 번호
+                offset:
+                  type: number
+                  description: 오프셋
+                pageSize:
+                  type: number
+                  description: 페이지 크기
+                unpaged:
+                  type: boolean
+                  description: 페이지 미적용 여부
+                sort:
+                  required:
+                  - empty
+                  - sorted
+                  - unsorted
+                  type: object
+                  properties:
+                    unsorted:
+                      type: boolean
+                      description: 미정렬 여부
+                    sorted:
+                      type: boolean
+                      description: 정렬 여부
+                    empty:
+                      type: boolean
+                      description: 정렬 없음 여부
+                  description: 정렬 정보
+              description: 페이지 정보
+            sort:
+              required:
+              - empty
+              - sorted
+              - unsorted
+              type: object
+              properties:
+                unsorted:
+                  type: boolean
+                  description: 미정렬 여부
+                sorted:
+                  type: boolean
+                  description: 정렬 여부
+                empty:
+                  type: boolean
+                  description: 정렬 없음 여부
+              description: 정렬 정보
+            first:
+              type: boolean
+              description: 첫 번째 페이지 여부
+            content:
+              type: array
+              items:
+                required:
+                - distanceKm
+                - id
+                - price
+                - sellerNickname
+                - status
+                - title
+                type: object
+                properties:
+                  locationName:
+                    type: string
+                    description: 상품 등록 동네명
+                    nullable: true
+                  lng:
+                    type: number
+                    description: 상품 위치 경도
+                    nullable: true
+                  price:
+                    type: number
+                    description: 가격
+                  distanceKm:
+                    type: number
+                    description: "인증된 동네와의 거리 (km, 소수점 1자리)"
+                  sellerNickname:
+                    type: string
+                    description: 판매자 닉네임
+                  id:
+                    type: number
+                    description: 상품 ID
+                  title:
+                    type: string
+                    description: 상품 제목
+                  categoryName:
+                    type: string
+                    description: 카테고리명
+                    nullable: true
+                  lat:
+                    type: number
+                    description: 상품 위치 위도
+                    nullable: true
+                  thumbnailUrl:
+                    type: string
+                    description: 썸네일 이미지 URL (없으면 null)
+                    nullable: true
+                  status:
+                    type: string
+                    description: 상품 상태 (SALE / RESERVE / SOLD)
+            empty:
+              type: boolean
+              description: 비어있음 여부
+            totalElements:
+              type: number
+              description: 전체 상품 수
+        message:
+          type: string
+          description: 응답 메시지
+    trades-tradeId-status486549215:
+      type: object
