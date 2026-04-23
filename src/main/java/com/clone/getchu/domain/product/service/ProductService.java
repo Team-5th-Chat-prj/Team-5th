@@ -168,7 +168,7 @@ public class ProductService {
         double lat = member.getLocation().getY();
         double radiusMeters = member.getLocationRadius() * 1000.0;
 
-        Page<NearbyProductRow> rawPage = productRepository.findNearbyProducts(lng, lat, radiusMeters, pageable);
+        Page<NearbyProductRow> rawPage = productRepository.findNearbyProducts(memberId, lng, lat, radiusMeters, pageable);
 
         List<NearbyProductResponse> content = rawPage.getContent().stream()
                 .map(NearbyProductResponse::from)

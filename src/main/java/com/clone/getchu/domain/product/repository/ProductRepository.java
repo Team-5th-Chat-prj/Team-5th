@@ -34,26 +34,31 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
                     "         c.name AS categoryName, m.nickname AS sellerNickname, " +
                     "         (SELECT pi.image_url FROM product_image pi WHERE pi.product_id = p.id LIMIT 1) AS thumbnailUrl, " +
                     "         p.location_name AS locationName, " +
-                    "         ST_Distance_Sphere(p.location, ST_Point(:lng, :lat, 4326)) AS distanceMeters, " +
-                    "         ST_Y(p.location) AS lat, ST_X(p.location) AS lng " +
+                    // ST_Point(lng, lat, srid) 는 MySQL 8.0.24+ 전용이라 ST_GeomFromText 사용
+                    "         ST_Distance_Sphere(p.location, ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')'), 4326, 'axis-order=long-lat')) AS distanceMeters, " +
+                    // SRID 4326 지리 좌표계에서 MySQL ST_X = 위도, ST_Y = 경도 (일반 수학 축과 반대)
+                    "         ST_X(p.location) AS lat, ST_Y(p.location) AS lng " +
                     "  FROM product p " +
                     "  JOIN category c ON p.category_id = c.id " +
                     "  JOIN members m ON p.seller_id = m.id " +
                     "  WHERE p.location IS NOT NULL AND p.is_deleted = false " +
                     "  AND p.status IN ('SALE', 'RESERVED') AND m.deleted = false " +
+                    "  AND p.seller_id <> :memberId " +
                     ") AS t " +
                     "WHERE t.distanceMeters <= :radiusMeters " +
                     "ORDER BY t.distanceMeters",
             countQuery = "SELECT COUNT(*) FROM ( " +
-                    "  SELECT ST_Distance_Sphere(p.location, ST_Point(:lng, :lat, 4326)) AS distanceMeters " +
+                    "  SELECT ST_Distance_Sphere(p.location, ST_GeomFromText(CONCAT('POINT(', :lng, ' ', :lat, ')'), 4326, 'axis-order=long-lat')) AS distanceMeters " +
                     "  FROM product p " +
                     "  JOIN members m ON p.seller_id = m.id " +
                     "  WHERE p.location IS NOT NULL AND p.is_deleted = false " +
                     "  AND p.status IN ('SALE', 'RESERVED') AND m.deleted = false " +
+                    "  AND p.seller_id <> :memberId " +
                     ") AS t WHERE t.distanceMeters <= :radiusMeters",
             nativeQuery = true
     )
     Page<NearbyProductRow> findNearbyProducts(
+            @Param("memberId") Long memberId,
             @Param("lng") double lng,
             @Param("lat") double lat,
             @Param("radiusMeters") double radiusMeters,
