@@ -76,6 +76,11 @@ public class ChatRoom extends BaseEntity {
         }
     }
 
+    public void reopenForParticipants() {
+        this.deletedByBuyer = false;
+        this.deletedBySeller = false;
+    }
+
     public boolean isLeftBy(Long memberId) {
         if (this.buyerId.equals(memberId)) {
             return this.deletedByBuyer;
