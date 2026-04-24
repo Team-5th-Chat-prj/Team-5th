@@ -1,6 +1,6 @@
 # 05. ERD (Entity Relationship Diagram)
 
-> **버전**: v2.1 (Lettuce 분산락 반영 및 찜 수 정책 수정)
+> **버전**: v2.1 (MEMBER·PRODUCT 위치 컬럼 추가 / PRODUCT_IMAGE TEXT 타입 반영 / Lettuce 분산락 반영 및 찜 수 정책 수정)
 > **표기법**: Mermaid ERD
 >
 > **개념 정의**: `PRODUCT` = 중고 판매글(Listing). 카탈로그 상품이 아님. 판매자가 올린 "이 물건을 팝니다" 게시글 1건 = PRODUCT 1건.
@@ -21,6 +21,9 @@ erDiagram
         text profile_image_url
         varchar role "USER / ADMIN"
         boolean deleted "Soft Delete"
+        point location "GEOMETRY SRID 4326, nullable"
+        varchar location_name "행정구역명, nullable"
+        int location_radius "근처 상품 반경(km), default 3"
         datetime created_at
         datetime updated_at
     }
@@ -40,6 +43,8 @@ erDiagram
         varchar status "SALE / RESERVED / SOLD_OUT"
         int like_count "비정규화"
         boolean is_deleted "Soft Delete"
+        point location "GEOMETRY SRID 4326, nullable"
+        varchar location_name "행정구역명, nullable"
         datetime created_at
         datetime updated_at
     }
@@ -47,7 +52,7 @@ erDiagram
     PRODUCT_IMAGE {
         bigint id PK
         bigint product_id FK
-        varchar image_url
+        text image_url "TEXT 타입 — UNIQUE 인덱스 불가"
         datetime created_at
         datetime updated_at
     }
@@ -135,6 +140,8 @@ erDiagram
 - REVIEW는 거래당 1건만 허용한다.
 - CHAT_ROOM은 구매자가 상품 상세에서 채팅하기를 눌렀을 때 생성된다.
 - 인기 검색어는 Redis Sorted Set으로 관리하며, DB 테이블 없음.
+- MEMBER.location, PRODUCT.location은 JTS Point 객체로 저장 (SRID 4326, MySQL GEOMETRY 타입).
+- MEMBER.location_radius 기본값 3km. 동네 인증 완료 후 근처 상품 조회가 활성화됨.
 ---
 
 ## 2. 설계 결정 사항
@@ -169,17 +176,27 @@ PRODUCT.status: SALE ←→ RESERVED → SOLD_OUT
 **왜 두 곳에 상태가 있는가?**
 - PRODUCT.status가 없으면 목록 조회 시 매번 TRADE JOIN 필요 → 성능 저하
 - TRADE.status가 없으면 취소 이력, 리뷰 연결 기준점 없음
-- 두 상태는 항상 동기화되어야 하며, `TradeService` 내에서 한 트랜잭션으로 함께 변경
+
+**PRODUCT.status ↔ TRADE.status 동기화 규칙** (부분 동기화):
+
+| TRADE.status | PRODUCT.status | 비고 |
+|---|---|---|
+| RESERVED | RESERVED | 예약 시 동기화 |
+| TRADING | **RESERVED 유지** | PRODUCT에 TRADING 상태 없음 |
+| SOLD | SOLD_OUT | 거래 완료 시 동기화 |
+| REVIEWED | SOLD_OUT 유지 | PRODUCT 변경 없음 |
+
+> 프론트는 상품 상세/홈에서 PRODUCT.status를 보고, 구매/판매 목록에서 TRADE.status를 별도로 받아 표시한다.
 
 **거래 상태 전이 권한**:
 
 | 전이 | 권한 |
 |------|------|
-| SALE → RESERVED | 구매자 (예약 요청) |
-| RESERVED → TRADING | **판매자**만 가능 |
-| TRADING → SOLD | **구매자**만 가능 |
+| SALE → RESERVED | **구매자** (예약하기) |
+| RESERVED → TRADING | **판매자**만 (거래 확정) |
+| TRADING → SOLD | **구매자**만 (거래 완료 확인) |
 | RESERVED/TRADING → SALE (취소) | 판매자, 구매자 모두 가능 |
-| SOLD → REVIEWED | 구매자 (리뷰 작성) |
+| SOLD → REVIEWED | **구매자** (리뷰 작성) |
 
 ---
 
@@ -270,6 +287,32 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 
 ---
 
+### 2-9. 위치 데이터 설계
+
+**컬럼 구성**:
+
+| 테이블 | 컬럼 | 타입 | 설명 |
+|--------|------|------|------|
+| MEMBER | `location` | GEOMETRY (POINT, SRID 4326) | 동네 인증된 GPS 좌표. nullable — 인증 전 null |
+| MEMBER | `location_name` | VARCHAR | 카카오 API 반환 행정구역명 (예: "마포구 합정동") |
+| MEMBER | `location_radius` | INT | 근처 상품 조회 반경(km). default 3 |
+| PRODUCT | `location` | GEOMETRY (POINT, SRID 4326) | 상품 등록 시 판매자 인증 위치 저장. nullable |
+| PRODUCT | `location_name` | VARCHAR | 상품 등록 위치 행정구역명 |
+
+**좌표 저장 방식**:
+- Java: `org.locationtech.jts.geom.Point` (Hibernate Spatial 매핑)
+- `GeometryFactory(PrecisionModel(), 4326)` 사용
+- `Coordinate(lng, lat)` 순서 (JTS 관례: x=경도, y=위도)
+
+**근처 상품 조회 쿼리 핵심**:
+```sql
+ST_Distance_Sphere(product.location, ST_GeomFromText('POINT(lng lat)', 4326)) <= member.location_radius * 1000
+-- ST_GeomFromText 사용 이유: ST_Point(lng, lat, srid)는 MySQL 8.0.24+ 전용
+-- 단위: ST_Distance_Sphere 결과는 미터(m) → location_radius * 1000으로 변환
+```
+
+---
+
 ## 3. 인덱스 계획 (EXPLAIN 기반 최적화 대상)
 
 | 테이블 | 인덱스 | 이유 |
@@ -285,3 +328,5 @@ if (hasActiveTrade) throw new ConflictException("ALREADY_RESERVED", ...);
 | CHAT_ROOM | `(seller_id)` | 판매자 기준 채팅방 목록 조회 최적화 |
 | CHAT_MESSAGE | `(chat_room_id, id DESC)` | 채팅 이력 최신순 |
 | REVIEW | `(reviewee_id, id)` | 받은 리뷰 목록 조회 |
+| PRODUCT | `SPATIAL(location)` | 근처 상품 `ST_Distance_Sphere` 반경 조회 최적화 |
+| MEMBER | `SPATIAL(location)` | 회원 위치 조회 (필요 시) |

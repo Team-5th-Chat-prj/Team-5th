@@ -1,7 +1,6 @@
 # 06. API 명세서
 
-> **버전**: v2.1 (코드 기준 전면 개정 — RT Rotation, Lettuce 분산락, Redis ZSET 인기 검색어 반영)
-> **Base URL**: `https://api.marketplace.com/api/v1`
+> **버전**: v3.0 (위치 API 추가 — 동네 인증·근처 상품 조회, 에러코드 전체 정합성 수정)
 > **인증**: `Authorization: Bearer {AccessToken}` (🔒 표시 API)
 
 ---
@@ -118,6 +117,14 @@
 | GET | `/chat-rooms/{chatRoomId}/messages` | 채팅 이력 조회 | 🔒 |
 | DELETE | `/chat-rooms/{chatRoomId}/leave` | 채팅방 나가기 | 🔒 |
 | PATCH | `/chat-rooms/{chatRoomId}/read` | 읽음 처리 | 🔒 |
+
+### 위치 API
+
+| Method | URI | 설명 | 인증 |
+|--------|-----|------|------|
+| POST | `/api/location/verify/gps` | GPS 동네 인증 | 🔒 |
+| POST | `/api/location/verify/address` | 주소 텍스트 동네 인증 | 🔒 |
+| GET | `/api/products/nearby` | 근처 상품 조회 | 🔒 |
 
 ### 검색 API
 
@@ -857,6 +864,123 @@
 
 ---
 
+### POST /api/location/verify/gps 🔒
+
+**Request Body**:
+```json
+{
+  "lat": 37.549,
+  "lng": 126.913
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 |
+|------|------|------|------|
+| lat | Double | ✅ | -90.0 ~ 90.0 |
+| lng | Double | ✅ | -180.0 ~ 180.0 |
+
+**Response 200**:
+```json
+{
+  "code": "SUCCESS",
+  "message": "동네 인증이 완료되었습니다.",
+  "data": {
+    "locationName": "마포구 합정동",
+    "locationRadius": 3
+  }
+}
+```
+
+**Response 400**:
+```json
+{ "code": "KAKAO_REGION_NOT_FOUND", "message": "해당 좌표의 행정구역 정보를 찾을 수 없습니다." }
+```
+
+**Response 502**:
+```json
+{ "code": "KAKAO_API_ERROR", "message": "카카오 API 호출에 실패했습니다." }
+```
+
+---
+
+### POST /api/location/verify/address 🔒
+
+**Request Body**:
+```json
+{
+  "address": "서울 마포구 합정동"
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 |
+|------|------|------|------|
+| address | String | ✅ | 1자 이상, 200자 이하 |
+
+**Response 200**:
+```json
+{
+  "code": "SUCCESS",
+  "message": "동네 인증이 완료되었습니다.",
+  "data": {
+    "locationName": "마포구 합정동",
+    "locationRadius": 3
+  }
+}
+```
+
+**Response 400** (주소 좌표 변환 실패):
+```json
+{ "code": "KAKAO_ADDRESS_NOT_FOUND", "message": "입력한 주소로 좌표를 찾을 수 없습니다." }
+```
+
+---
+
+### GET /api/products/nearby 🔒
+
+**Query Parameters**:
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| page | Integer | ❌ | 기본값 0 (Offset 기반, 페이지 크기 20) |
+
+**Response 200**:
+```json
+{
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "content": [
+      {
+        "id": 42,
+        "title": "침대 프레임 퀸사이즈",
+        "price": 150000,
+        "status": "SALE",
+        "categoryName": "가구/인테리어",
+        "sellerNickname": "민준",
+        "thumbnailUrl": "https://...",
+        "locationName": "마포구 합정동",
+        "distanceKm": 0.8,
+        "lat": 37.549,
+        "lng": 126.913
+      }
+    ],
+    "totalElements": 34,
+    "totalPages": 2,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**Response 400** (동네 인증 미완료):
+```json
+{ "code": "LOCATION_NOT_VERIFIED", "message": "동네 인증이 필요합니다." }
+```
+
+> 거리 오름차순 정렬. 본인 상품·삭제 상품·탈퇴 회원 상품 제외. 반경은 인증 시 저장된 `locationRadius`(km) 기준.
+
+---
+
 ### GET /search/popular
 
 **Response 200** (Caffeine 캐시):
@@ -883,10 +1007,17 @@
 | 400 | INVALID_RATING | 잘못된 평점 (0.5~5.0, 0.5 단위 아님) |
 | 400 | SELF_RESERVATION | 본인 상품 예약 시도 |
 | 400 | SELF_CHAT | 본인 상품에 채팅 시도 |
+| 400 | SAME_AS_CURRENT_PASSWORD | 새 비밀번호가 현재 비밀번호와 동일 |
+| 400 | CHAT_ALREADY_LEFT | 이미 나간 채팅방에 재요청 |
+| 400 | KAKAO_ADDRESS_NOT_FOUND | 입력 주소로 좌표 변환 실패 |
+| 400 | KAKAO_REGION_NOT_FOUND | 좌표로 행정구역명 변환 실패 |
+| 400 | LOCATION_NOT_VERIFIED | 동네 인증 미완료 상태에서 근처 상품 조회 시도 |
 | 401 | UNAUTHORIZED | 인증 실패 / 토큰 만료 |
-| 401 | INVALID_CREDENTIALS | 이메일 또는 비밀번호 불일치 |
+| 401 | INVALID_CREDENTIALS | 이메일 또는 비밀번호 불일치 (로그인) |
+| 401 | INVALID_PASSWORD | 현재 비밀번호 불일치 (비밀번호 변경) |
 | 401 | TOKEN_EXPIRED | Refresh Token 만료 |
-| 401 | TOKEN_INVALID | 토큰 위변조 또는 블랙리스트 |
+| 401 | TOKEN_INVALID | 토큰 위변조 또는 Redis 저장값 불일치 |
+| 401 | LOGGED_OUT_TOKEN | 블랙리스트에 등록된 AccessToken 재사용 |
 | 403 | TRADE_FORBIDDEN | 거래 권한 없음 |
 | 403 | CHAT_FORBIDDEN | 채팅방 권한 없음 |
 | 403 | PRODUCT_FORBIDDEN | 상품 권한 없음 |
@@ -894,10 +1025,13 @@
 | 404 | PRODUCT_NOT_FOUND | 존재하지 않는 상품 |
 | 404 | TRADE_NOT_FOUND | 존재하지 않는 거래 |
 | 404 | CHAT_ROOM_NOT_FOUND | 존재하지 않는 채팅방 |
+| 404 | CATEGORY_NOT_FOUND | 존재하지 않는 카테고리 |
 | 409 | DUPLICATE_EMAIL | 이메일 중복 |
+| 409 | DUPLICATE_NICKNAME | 닉네임 중복 |
 | 409 | ALREADY_RESERVED | 이미 예약된 상품 |
 | 409 | LOCK_TIMEOUT | DB 락 대기 타임아웃 |
 | 500 | INTERNAL_ERROR | 서버 오류 |
+| 502 | KAKAO_API_ERROR | 카카오 지도 API 호출 실패 |
 
 ### retryAfter 정책
 
@@ -1370,4 +1504,131 @@ paths:
                           type: string
                         searchCount:
                           type: integer
+
+  /api/location/verify/gps:
+    post:
+      tags: [Location]
+      summary: GPS 동네 인증
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lng]
+              properties:
+                lat:
+                  type: number
+                  minimum: -90.0
+                  maximum: 90.0
+                  description: 위도
+                lng:
+                  type: number
+                  minimum: -180.0
+                  maximum: 180.0
+                  description: 경도
+      responses:
+        '200':
+          description: 동네 인증 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      locationName:
+                        type: string
+                        example: "마포구 합정동"
+                      locationRadius:
+                        type: integer
+                        example: 3
+        '400':
+          description: 좌표→행정구역 변환 실패 (KAKAO_REGION_NOT_FOUND)
+        '502':
+          description: 카카오 API 오류 (KAKAO_API_ERROR)
+
+  /api/location/verify/address:
+    post:
+      tags: [Location]
+      summary: 주소 텍스트 동네 인증
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address]
+              properties:
+                address:
+                  type: string
+                  maxLength: 200
+                  example: "서울 마포구 합정동"
+      responses:
+        '200':
+          description: 동네 인증 성공
+        '400':
+          description: 주소 변환 실패 (KAKAO_ADDRESS_NOT_FOUND) 또는 행정구역 변환 실패 (KAKAO_REGION_NOT_FOUND)
+        '502':
+          description: 카카오 API 오류 (KAKAO_API_ERROR)
+
+  /api/products/nearby:
+    get:
+      tags: [Location]
+      summary: 근처 상품 조회 (Offset 페이지네이션, 거리 오름차순)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: 페이지 번호 (페이지 크기 20 고정)
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            title:
+                              type: string
+                            price:
+                              type: integer
+                            status:
+                              type: string
+                              enum: [SALE, RESERVED, SOLD_OUT]
+                            locationName:
+                              type: string
+                            distanceKm:
+                              type: number
+                              example: 0.8
+                            lat:
+                              type: number
+                            lng:
+                              type: number
+                      totalElements:
+                        type: integer
+                      totalPages:
+                        type: integer
+        '400':
+          description: 동네 인증 미완료 (LOCATION_NOT_VERIFIED)
 ```
