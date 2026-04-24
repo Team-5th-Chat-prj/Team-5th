@@ -43,7 +43,8 @@
 | ORM | Spring Data JPA + QueryDSL 5 |
 | DB | MySQL 8.4 |
 | Spatial | Hibernate Spatial + JTS |
-| Cache | Redis 7.4 + Lettuce (Cache-Aside) |
+| Cache (로컬) | Caffeine (인메모리, 인기 검색어) |
+| Cache (분산) | Redis 7.4 + Lettuce (Cache-Aside) |
 | 실시간 통신 | WebSocket + STOMP |
 | 외부 API | 카카오 지도 API (Geocoding / Reverse Geocoding) |
 | 인증 | Spring Security + JWT (jjwt 0.12) |
@@ -139,13 +140,19 @@ cd Team-5th
 cp .env.example .env
 # .env 파일을 열어 각 항목 채우기 (아래 환경 변수 섹션 참고)
 
-# 3. Docker Compose로 전체 스택 실행
-#    (App + MySQL 8.4 + Redis 7.4 이 모두 컨테이너로 뜹니다)
-docker compose up --build
+# 3-1. JAR 빌드
+./gradlew bootJar
+
+# 3-2. Docker Compose 실행 (또는 스크립트 한 방에)
+./scripts/compose-up.sh
 ```
 
 > **팀 룰**: IDE(IntelliJ)에서 직접 실행하지 않고 Docker Compose로만 실행합니다.  
 > DB_URL은 `jdbc:mysql://mysql:3306/getchu` (컨테이너 내부 통신)으로 고정입니다.
+
+### 프론트엔드와 연동
+
+프론트엔드와 연결해서 실행하려면 → [프론트엔드 레포](링크)를 참고하세요.
 
 ### 개발 중 데이터베이스 접속
 
@@ -213,7 +220,14 @@ docs/api-spec/openapi3.yaml
 
 ### WebSocket 채팅 테스트
 
-채팅 기능을 수동으로 테스트할 때는 `chat-test.html`을 브라우저에서 열어 사용하세요.
+REST API는 OpenAPI YAML로 테스트할 수 있으나, WebSocket/STOMP는 별도 클라이언트가 필요합니다.
+
+**Postman 사용 (권장)**
+
+1. Postman에서 New → WebSocket 선택
+2. URL: `ws://localhost:8080/ws-chat/websocket`
+3. Headers에 `Authorization: Bearer {JWT 토큰}` 추가 후 Connect
+4. STOMP 프레임 형식은 [docs/SA/06-API 명세서.md](docs/SA/06-API%20명세서.md) 의 WebSocket/STOMP 명세 참고
 
 ---
 
