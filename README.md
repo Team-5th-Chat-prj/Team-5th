@@ -152,7 +152,7 @@ cp .env.example .env
 
 ### 프론트엔드와 연동
 
-프론트엔드와 연결해서 실행하려면 → [프론트엔드 레포](링크)를 참고하세요.
+프론트엔드와 연결해서 실행하려면 → [프론트엔드 레포](https://github.com/Team-5th-Chat-prj/get-chu-frontend)를 참고하세요.
 
 ### 개발 중 데이터베이스 접속
 
