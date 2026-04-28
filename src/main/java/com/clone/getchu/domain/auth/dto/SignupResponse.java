@@ -4,12 +4,6 @@ import com.clone.getchu.domain.member.entity.Member;
 
 import java.time.LocalDateTime;
 
-/**
- * [회원가입 응답 DTO]
- * POST /auth/signup → 201 Created
- *
- * 비밀번호는 응답에서 제외
- */
 public record SignupResponse(
         Long id,
         String email,

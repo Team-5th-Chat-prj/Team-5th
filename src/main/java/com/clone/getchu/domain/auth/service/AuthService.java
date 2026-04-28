@@ -35,12 +35,6 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final StringRedisTemplate stringRedisTemplate;
 
-    /**
-     * 회원가입
-     * 1. 이메일 중복 체크 → 409 DUPLICATE_EMAIL
-     * 2. 비밀번호 BCrypt 인코딩
-     * 3. Member 엔티티 생성 후 저장
-     */
     @Transactional
     public SignupResponse signup(SignupRequest request) {
         if (memberRepository.existsByEmail(request.email())) {
@@ -60,7 +54,7 @@ public class AuthService {
             return SignupResponse.from(memberRepository.save(member));
         } catch (DataIntegrityViolationException e) {
             // 추가 DB 조회 없이 예외 메시지로 위반된 제약조건을 판별
-            // 회원가입의 unique 제약은 email·nickname 둘뿐이므로 닉네임이 아니면 이메일 충돌
+
             String msg = e.getMostSpecificCause().getMessage();
             if (msg != null && msg.contains("uk_member_nickname")) {
                 throw new ConflictException(ErrorCode.DUPLICATE_NICKNAME);
@@ -69,18 +63,6 @@ public class AuthService {
         }
     }
 
-    /**
-     * 로그인
-     * 1. 이메일로 회원 조회 → 없으면 404 MEMBER_NOT_FOUND
-     * 2. 비밀번호 BCrypt 검증 → 불일치 시 401 INVALID_CREDENTIALS
-     * 3. AT + RT 발급
-     * 4. RT를 Redis에 저장 (TTL = 7일)
-     * - 키: "RT:{memberId}" / 기기 1대 기준 → 재로그인 시 이전 RT 자동 덮어쓰기
-     * <p>
-     * [보안 참고] 이메일 존재 여부를 404로 노출하고 있음.
-     * 이메일 열거 공격 방어가 필요하다면 401로 통일 가능.
-     * 현재는 API 명세(06-API 명세서.md)에 따라 구분 응답을 유지함.
-     */
     @Transactional
     public LoginResponse login(LoginRequest request) {
         Member member = memberRepository.findByEmail(request.email())

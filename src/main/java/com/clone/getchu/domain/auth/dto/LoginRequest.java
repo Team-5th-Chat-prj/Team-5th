@@ -3,14 +3,6 @@ package com.clone.getchu.domain.auth.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * [로그인 요청 DTO]
- * POST /auth/login
- *
- * 로그인 실패 시 응답 분기:
- * - 이메일 없음  → 404 MEMBER_NOT_FOUND
- * - 비밀번호 불일치 → 401 INVALID_CREDENTIALS
- */
 public record LoginRequest(
 
         @NotBlank(message = "이메일은 필수입니다.")

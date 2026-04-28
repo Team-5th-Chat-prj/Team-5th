@@ -4,7 +4,6 @@ import com.clone.getchu.domain.product.dto.NearbyProductResponse;
 import com.clone.getchu.domain.product.service.ProductService;
 import com.clone.getchu.global.common.ApiResponse;
 import com.clone.getchu.global.security.CustomUserDetails;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

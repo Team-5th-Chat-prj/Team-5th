@@ -121,11 +121,3 @@ public class Member extends BaseEntity {
         this.locationName = locationName;
     }
 }
-// TODO [v2] 회원 등급제 추가 예정
-// - averageRating 기준으로 등급 계산
-// - 🥕 새내기(1~2) / 😊 보통(3) / 😄 좋음(4) / 🌟 최고(5)
-// - 프론트에서 배지 표시
-
-// TODO [v2] 소프트 삭제 시 연관 데이터 처리 추가 예정
-// - 등록 상품 비공개 처리 (Product.status → DELETED)
-// - 진행중 거래 취소 처리 (Trade.status → CANCELLED)

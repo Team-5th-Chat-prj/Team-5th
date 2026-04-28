@@ -2,10 +2,7 @@ package com.clone.getchu.domain.trade.enums;
 
 import com.clone.getchu.global.exception.BusinessException;
 import com.clone.getchu.global.exception.ErrorCode;
-
-import static com.clone.getchu.global.exception.ErrorCode.INVALID_STATUS_TRANSITION;
 import com.clone.getchu.global.exception.ForbiddenException;
-import com.clone.getchu.domain.trade.enums.TradeRole;
 
 /**
  * 거래 진행 상태 Enum
