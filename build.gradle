@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.2.4'
     id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.asciidoctor.jvm.convert' version '3.3.2'
+    id 'com.epages.restdocs-api-spec' version '0.19.4'
 }
 
 group = 'com.clone'
@@ -15,29 +17,41 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    asciidoctorExt
 }
 
 repositories {
     mavenCentral()
 }
 
+// ✅ dependencies 밖으로 꺼내야 함
+ext {
+    snippetsDir = file('build/generated-snippets')
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    
+
     // Security & JWT
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // env
+    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
+    // Apache HttpClient 5 — RestTemplate 커넥션 풀 관리
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
 
     // JPA & DB
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.hibernate.orm:hibernate-spatial'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    // Redis & Redisson
+    // Redis & Lettuce
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.redisson:redisson-spring-boot-starter:3.27.0'
 
     // WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
@@ -52,13 +66,50 @@ dependencies {
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
 
+    // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
+    // Spring REST Docs + restdocs-api-spec
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.19.4'
+    asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor'
+
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Embedded Redis (테스트용 — 실제 Redis 없이도 동작)
+    // slf4j-simple 제외: Spring Boot Logback과 충돌 방지
+    testImplementation('it.ozimov:embedded-redis:0.7.3') {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
 }
 
-tasks.named('test') {
+// ✅ dependencies 밖으로 꺼내야 함
+test {
+    outputs.dir snippetsDir
     useJUnitPlatform()
+}
+
+asciidoctor {
+    inputs.dir snippetsDir
+    configurations 'asciidoctorExt'
+    dependsOn test
+}
+
+openapi3 {
+    server = 'http://localhost:8080'
+    title = 'Getchu API'
+    description = 'Getchu 프로젝트 API 명세서'
+    version = '1.0.0'
+    format = 'yaml'
+}
+task copyOpenApi(type: Copy, dependsOn: 'openapi3') {
+    from 'build/api-spec/openapi3.yaml'
+    into 'docs/api-spec'
 }

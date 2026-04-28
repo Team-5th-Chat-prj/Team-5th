@@ -1,5 +1,8 @@
 server:
   port: 8080
+  tomcat:
+    max-http-form-post-size: 50MB
+    max-swallow-size: 50MB
 
 spring:
   application:
@@ -9,18 +12,45 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+    defer-datasource-initialization: true
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        defer-datasource-initialization: true
+        sql:
+          init:
+            mode: always
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  mvc:
+    async:
+      request-timeout: 30000
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  access-expiration-time: 900000 # 15분 (ms)
+  access-expiration-time: ${JWT_ACCESS_EXPIRATION_TIME:900000}      # 15분
+  refresh-expiration-time: ${JWT_REFRESH_EXPIRATION_TIME:604800000} # 7일
+
+lock:
+  retry:
+    max: 10
+    initial-backoff-ms: 50
+    max-backoff-ms: 1000
+  expiration-seconds: 3
+
+kakao:
+  api-key: ${KAKAO_API_KEY}
