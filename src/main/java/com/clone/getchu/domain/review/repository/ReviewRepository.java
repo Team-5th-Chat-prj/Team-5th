@@ -15,7 +15,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     boolean existsByTradeId(Long tradeId);
 
     // 리뷰받은 회원의 리뷰 목록 커서 페이징 조회 (최신순)
-    // - JOIN으로 reviewer, trade→product를 한 번에 로딩하여 N+1 방지
     // - cursorId가 null이면 첫 페이지, 있으면 해당 id 미만의 데이터 조회
     @Query("SELECT new com.clone.getchu.domain.review.dto.response.ReviewResponse(" +
             "r.id, rv.id, r.rating, r.content, r.createdAt, " +

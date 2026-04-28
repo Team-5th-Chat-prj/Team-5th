@@ -14,7 +14,6 @@ import com.clone.getchu.domain.member.entity.Member;
 import com.clone.getchu.domain.member.repository.MemberRepository;
 import com.clone.getchu.global.exception.BusinessException;
 import com.clone.getchu.global.exception.ErrorCode;
-import com.clone.getchu.global.exception.ForbiddenException;
 import com.clone.getchu.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

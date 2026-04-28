@@ -12,7 +12,6 @@ public record MemberProfileResponse(
         BigDecimal averageRating,
         int reviewCount,
         LocalDateTime createdAt
-        // 리뷰 목록은 ReviewController에서 별도 API로
 ) {
     public static MemberProfileResponse from(Member member) {
         return new MemberProfileResponse(
